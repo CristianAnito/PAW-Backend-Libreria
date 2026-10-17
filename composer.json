@@ -1,0 +1,25 @@
+{
+    "name": "paw/backend-libreria",
+    "description": "Backend en PHP del sitio web de la librería",
+    "type": "project",
+    "require": {
+        "php": "^8.1",
+        "monolog/monolog": "^3.0",
+        "phpmailer/phpmailer": "^6.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        },
+        "files": [
+            "app/Core/helpers.php"
+        ]
+    },
+    "authors": [
+        {
+            "name": "PAW"
+        }
+    ],
+    "minimum-stability": "stable"
+
+}
