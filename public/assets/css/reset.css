@@ -1,0 +1,60 @@
+/* ─── CSS Reset Moderno ─── */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    text-size-adjust: none;
+    -webkit-text-size-adjust: none;
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100vh;
+    text-rendering: optimizeSpeed;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Elementos de bloque comunes */
+main, section, article, aside, header, footer, nav, figure, figcaption {
+    display: block;
+}
+
+/* Remover viñetas de listas */
+ul, ol {
+    list-style: none;
+}
+
+/* Navegación y Enlaces */
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Imágenes y multimedia */
+img, picture, svg, video, canvas {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Formularios y controles */
+input, button, textarea, select {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+}
+
+button {
+    cursor: pointer;
+}
+
+/* Tablas */
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}

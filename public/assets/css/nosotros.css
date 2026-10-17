@@ -1,0 +1,323 @@
+/*general*/
+.nosotros-main {
+    width: 85%;
+    max-width: 1200px;
+    margin: 60px auto;
+}
+
+
+/*presentacion*/
+
+.presentacion-nosotros {
+    text-align: center;
+    margin-bottom: 70px;
+}
+
+.presentacion-nosotros h1 {
+    margin-bottom: 15px;
+}
+
+.presentacion-nosotros p {
+    font-size: 1.2rem;
+}
+
+/* Tarjetas */
+
+.informacion-nosotros {
+    margin-bottom: 90px;
+}
+
+.informacion-nosotros > h2,
+.historia-timeline > h2,
+.equipo > h2 {
+    margin-bottom: 35px;
+}
+
+.tarjetas-nosotros {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+}
+
+/* Elementos de las tarjetas */
+
+.tarjeta-interior {
+    width: 100%;
+    padding: 30px;
+    background-color: var(--color-suave);;
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio);
+    transition: transform var(--transicion), box-shadow var(--transicion);
+}
+
+.tarjeta-interior:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 20px var(--transicion);
+}
+
+.tarjeta-interior h3 {
+    margin-bottom: 15px;
+    color: var(--color-morado);
+}
+
+.tarjeta-interior p {
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.tarjeta-interior ul {
+    padding-left: 20px;
+    list-style: disc;
+}
+
+.tarjeta-interior li {
+    margin-bottom: 8px;
+}
+/* linea de tiempo*/
+
+.historia-timeline {
+    margin-bottom: 100px;
+}
+
+.timeline {
+    position: relative;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px 0;
+}
+
+
+/* Línea vertical */
+
+.timeline::before {
+    content: "";
+    position: absolute;
+
+    top: 0;
+    bottom: 0;
+    left: 50%;
+
+    width: 3px;
+
+    background-color: var(--color-violeta);
+
+    transform: translateX(-50%);
+}
+
+
+.evento-timeline {
+    position: relative;
+
+    display: flex;
+    width: 50%;
+
+    margin-bottom: 50px;
+}
+
+
+.evento-timeline:nth-child(odd) {
+    justify-content: flex-end;
+    padding-right: 45px;
+}
+
+
+.evento-timeline:nth-child(even) {
+    margin-left: 50%;
+    padding-left: 45px;
+}
+
+
+/* Punto */
+
+.punto-timeline {
+    position: absolute;
+
+    top: 20px;
+
+    width: 18px;
+    height: 18px;
+
+    border-radius: 50%;
+
+    background-color: var(--color-morado);
+    border: 4px solid var(--transicion);
+
+    box-shadow: 0 0 0 2px var(--color-morado);
+}
+
+
+.evento-timeline:nth-child(odd) .punto-timeline {
+    right: -9px;
+}
+
+
+.evento-timeline:nth-child(even) .punto-timeline {
+    left: -9px;
+}
+
+
+/* Contenido */
+
+.contenido-timeline {
+    width: 100%;
+    padding: 22px;
+
+    border: 1px solid var(--color-morado);
+    border-radius: 14px;
+
+    background-color:var(--transicion);
+
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease;
+}
+
+
+.contenido-timeline:hover {
+    transform: translateY(-5px);
+
+    box-shadow: 0 8px 20px var(--color-texto);
+}
+
+
+.contenido-timeline span {
+    color: var(--color-morado);
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+
+.contenido-timeline h3 {
+    margin: 8px 0 10px;
+}
+
+
+.contenido-timeline p {
+    line-height: 1.6;
+}
+
+
+/*presentacion */
+
+.equipo {
+    margin-bottom: 80px;
+    text-align: center;
+}
+
+
+.introduccion-equipo {
+    margin-bottom: 35px;
+}
+
+
+.tarjetas-equipo {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 25px;
+}
+
+
+.integrante {
+    padding: 20px;
+
+    border: 1px solid var(--transicion);
+    border-radius: 15px;
+
+    background-color: var(--transicion);
+
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease;
+}
+
+
+.integrante:hover {
+    transform: translateY(-8px);
+
+    box-shadow: 0 10px 25px var(--color-texto);
+}
+
+
+/* Espacio para foto */
+
+.foto-integrante {
+    width: 130px;
+    height: 130px;
+
+    margin: 0 auto 20px;
+
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 3px solid var(--color-violeta);
+
+    background-color: var(--transicion);
+
+    color: var(--color-morado);
+}
+
+
+.integrante h3 {
+    margin-bottom: 8px;
+}
+
+
+.integrante p {
+    font-size: 0.9rem;
+}
+
+
+/* ==============================
+   RESPONSIVE
+   ============================== */
+
+@media (max-width: 900px) {
+
+    .tarjetas-nosotros {
+        grid-template-columns: 1fr;
+    }
+
+    .tarjetas-equipo {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+}
+
+@media (max-width: 600px) {
+    .nosotros-main {
+        width: 90%;
+    }
+    .tarjetas-equipo {
+        grid-template-columns: 1fr;
+    }
+    .timeline::before {
+        left: 10px;
+    }
+    .evento-timeline,
+    .evento-timeline:nth-child(even) {
+        width: 100%;
+        margin-left: 0;
+        padding-left: 40px;
+        padding-right: 0;
+    }
+    .evento-timeline:nth-child(odd) {
+        justify-content: flex-start;
+    }
+    .evento-timeline:nth-child(odd) .punto-timeline,
+    .evento-timeline:nth-child(even) .punto-timeline {
+        left: 1px;
+        right: auto;
+    }
+}
+/* Adaptación para celulares */
+
+@media (max-width: 767px) {
+    .tarjetas-nosotros {
+        grid-template-columns: 1fr;
+    }
+
+    .tarjeta-interior {
+        padding: 25px;
+    }
+}
