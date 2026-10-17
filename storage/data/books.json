@@ -1,0 +1,32 @@
+[
+    {
+        "id": 1,
+        "title": "Cien años de soledad",
+        "slug": "cien-anos-de-soledad",
+        "author": "Gabriel García Márquez",
+        "price": 15000.00,
+        "stock": 5,
+        "description": "Una obra maestra de la literatura latinoamericana y del realismo mágico.",
+        "cover": "cien-anos.jpg"
+    },
+    {
+        "id": 2,
+        "title": "Rayuela",
+        "slug": "rayuela",
+        "author": "Julio Cortázar",
+        "price": 12500.00,
+        "stock": 3,
+        "description": "Novela emblemática que invita a múltiples lecturas.",
+        "cover": "rayuela.jpg"
+    },
+    {
+        "id": 3,
+        "title": "Ficciones",
+        "slug": "ficciones",
+        "author": "Jorge Luis Borges",
+        "price": 11000.00,
+        "stock": 8,
+        "description": "Colección de cuentos fundamentales de la literatura fantástica.",
+        "cover": "ficciones.jpg"
+    }
+]
