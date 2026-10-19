@@ -1,32 +1,134 @@
 [
     {
         "id": 1,
-        "title": "Cien años de soledad",
-        "slug": "cien-anos-de-soledad",
-        "author": "Gabriel García Márquez",
-        "price": 15000.00,
-        "stock": 5,
-        "description": "Una obra maestra de la literatura latinoamericana y del realismo mágico.",
-        "cover": "cien-anos.jpg"
+        "slug": "monje-ferrari",
+        "title": "El monje que vendió su Ferrari",
+        "author": "Robin Sharma",
+        "genre": "Autoayuda / Desarrollo personal",
+        "price": 30499,
+        "summary": "Fábula espiritual que invita a reflexionar sobre la felicidad, el equilibrio y el propósito de vida.",
+        "synopsis": "Julian Mantle es un exitoso abogado cuya vida cambia después de sufrir un ataque al corazón. Ante una profunda crisis personal, decide vender sus pertenencias y viajar a la India. Allí descubre enseñanzas relacionadas con la felicidad, el coraje, la paz interior y el equilibrio.",
+        "cover": "monje-ferrari.jpg"
     },
     {
         "id": 2,
-        "title": "Rayuela",
-        "slug": "rayuela",
-        "author": "Julio Cortázar",
-        "price": 12500.00,
-        "stock": 3,
-        "description": "Novela emblemática que invita a múltiples lecturas.",
-        "cover": "rayuela.jpg"
+        "slug": "revolucion-abundancia",
+        "title": "La revolución de la abundancia",
+        "author": "Ismael Cala",
+        "genre": "Autoayuda",
+        "price": 20999,
+        "summary": "Propuesta de desarrollo personal para transformar la manera en que pensamos sobre el éxito y el valor propio.",
+        "synopsis": "Ismael Cala propone cuestionar las creencias de escasez que condicionan nuestra percepción de la vida. El libro plantea un cambio de mentalidad basado en la consciencia, la claridad y la plenitud, integrando espiritualidad práctica, neurociencia y desarrollo personal.",
+        "cover": "revolucion-abundancia.jpg"
     },
     {
         "id": 3,
-        "title": "Ficciones",
+        "slug": "sutil-arte",
+        "title": "El sutil arte de que casi todo te importe una mierda",
+        "author": "Mark Manson",
+        "genre": "Autoayuda / Desarrollo personal",
+        "price": 25000,
+        "summary": "Mirada directa e irreverente sobre la felicidad, los problemas y los valores personales.",
+        "synopsis": "Mark Manson cuestiona la idea de que debemos mantener una actitud positiva constantemente. En su lugar, propone aceptar nuestras limitaciones, afrontar las dificultades y aprender a elegir qué cosas realmente merecen nuestra atención y energía.",
+        "cover": "sutil-arte.jpg"
+    },
+    {
+        "id": 4,
+        "slug": "poder-ahora",
+        "title": "El poder del ahora",
+        "author": "Eckhart Tolle",
+        "genre": "Autoayuda / Espiritualidad",
+        "price": 30499,
+        "summary": "Guía espiritual que propone descubrir el valor de vivir plenamente en el momento presente.",
+        "synopsis": "Eckhart Tolle reflexiona sobre cómo nuestra identificación constante con los pensamientos, el pasado y las preocupaciones por el futuro puede generar sufrimiento. El autor propone desarrollar una mayor consciencia del presente como camino hacia una vida más plena.",
+        "cover": "poder-ahora.jpg"
+    },
+    {
+        "id": 5,
+        "slug": "cien-anos-de-soledad",
+        "title": "Cien años de soledad",
+        "author": "Gabriel García Márquez",
+        "genre": "Novela",
+        "price": 27500,
+        "summary": "Una obra maestra de la literatura latinoamericana y del realismo mágico.",
+        "synopsis": "La historia de la familia Buendía a lo largo de siete generaciones en el pueblo ficticio de Macondo, entre guerras, amores, inventos y soledades.",
+        "cover": null
+    },
+    {
+        "id": 6,
+        "slug": "rayuela",
+        "title": "Rayuela",
+        "author": "Julio Cortázar",
+        "genre": "Novela",
+        "price": 24900,
+        "summary": "Novela emblemática que invita a múltiples lecturas.",
+        "synopsis": "Horacio Oliveira busca sentido entre París y Buenos Aires. El libro puede leerse de corrido o saltando capítulos según el tablero de dirección que propone el autor.",
+        "cover": null
+    },
+    {
+        "id": 7,
         "slug": "ficciones",
+        "title": "Ficciones",
         "author": "Jorge Luis Borges",
-        "price": 11000.00,
-        "stock": 8,
-        "description": "Colección de cuentos fundamentales de la literatura fantástica.",
-        "cover": "ficciones.jpg"
+        "genre": "Cuentos",
+        "price": 19800,
+        "summary": "Colección de cuentos fundamentales de la literatura fantástica.",
+        "synopsis": "Bibliotecas infinitas, laberintos, memorias perfectas y mundos inventados: los cuentos más célebres de Borges reunidos en un solo volumen.",
+        "cover": null
+    },
+    {
+        "id": 8,
+        "slug": "el-tunel",
+        "title": "El túnel",
+        "author": "Ernesto Sabato",
+        "genre": "Novela",
+        "price": 16500,
+        "summary": "Novela psicológica narrada por un pintor obsesionado.",
+        "synopsis": "Juan Pablo Castel, pintor, confiesa desde la cárcel el crimen de María Iribarne y reconstruye la obsesión que lo llevó hasta él.",
+        "cover": null
+    },
+    {
+        "id": 9,
+        "slug": "la-tregua",
+        "title": "La tregua",
+        "author": "Mario Benedetti",
+        "genre": "Novela",
+        "price": 17900,
+        "summary": "El diario de un oficinista a punto de jubilarse que vuelve a enamorarse.",
+        "synopsis": "Martín Santomé, viudo y cerca del retiro, registra en su diario la rutina de Montevideo hasta que la llegada de Laura Avellaneda le da una tregua inesperada.",
+        "cover": null
+    },
+    {
+        "id": 10,
+        "slug": "martin-fierro",
+        "title": "El gaucho Martín Fierro",
+        "author": "José Hernández",
+        "genre": "Poesía",
+        "price": 12900,
+        "summary": "El poema nacional argentino.",
+        "synopsis": "En versos gauchescos, Martín Fierro relata las injusticias que sufre al ser reclutado para la frontera y su vida como desertor.",
+        "cover": null
+    },
+    {
+        "id": 11,
+        "slug": "habitos-atomicos",
+        "title": "Hábitos atómicos",
+        "author": "James Clear",
+        "genre": "Autoayuda / Desarrollo personal",
+        "price": 28900,
+        "summary": "Pequeños cambios que producen resultados extraordinarios.",
+        "synopsis": "James Clear explica cómo se forman los hábitos y propone un método práctico para construir buenos hábitos y abandonar los malos, mejorando un poco cada día.",
+        "cover": null
+    },
+    {
+        "id": 12,
+        "slug": "padre-rico-padre-pobre",
+        "title": "Padre rico, padre pobre",
+        "author": "Robert T. Kiyosaki",
+        "genre": "Finanzas personales",
+        "price": 23500,
+        "summary": "Lo que los ricos enseñan a sus hijos sobre el dinero.",
+        "synopsis": "A partir de las enseñanzas de dos figuras paternas con visiones opuestas, el autor plantea ideas sobre educación financiera, activos y pasivos.",
+        "cover": null
     }
 ]

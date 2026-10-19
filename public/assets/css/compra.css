@@ -1,0 +1,58 @@
+/* ── Agregados del backend al formulario de compra ──────────────
+Se carga después de formulario.css (que ya estiliza text, tel, select y el botón). */
+
+/* email con el mismo estilo que los inputs de texto */
+main input[type="email"] {
+    display: block;
+    width: 100%;
+    border: 1.5px solid var(--color-borde);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-family: var(--fuente-titulo);
+    font-size: 0.9rem;
+    color: var(--color-texto);
+    background-color: var(--color-fondo);
+}
+
+main input[type="email"]:focus {
+    outline: none;
+    border-color: var(--color-primario);
+}
+
+/* campo con error devuelto por el servidor */
+main [aria-invalid="true"] {
+    border-color: #b3261e;
+}
+
+.error-campo {
+    color: #b3261e;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+.alerta-error {
+    background-color: #fdecea;
+    color: #8c1d18;
+    border: 1.5px solid #f5c2c0;
+    border-radius: var(--radio);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+main > aside p {
+    margin-top: 1rem;
+}
+
+.compra-confirmada {
+    grid-column: 1 / -1;
+    background-color: var(--color-suave);
+    border: 2px solid var(--color-borde);
+    border-radius: var(--radio);
+    padding: 1.5rem;
+    line-height: 1.6;
+}
+
+.compra-confirmada a {
+    color: var(--color-primario);
+    font-weight: 600;
+}

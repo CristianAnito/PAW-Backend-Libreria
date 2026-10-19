@@ -1,34 +1,56 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Core;
 
-class View
+use RuntimeException;
+
+/**
+ * Motor de plantillas mínimo: archivos .php con HTML dentro de app/Views.
+ */
+final class View
 {
-    public static function render(string $view, array $data = []): Response
+    // $viewsPath: carpeta raíz de las plantillas (app/Views).
+    public function __construct(private string $viewsPath) {}
+
+    /**
+     * Renderiza una plantilla dentro de un layout y devuelve el HTML.
+     *
+     * @param string      $template Ruta relativa sin extensión (ej. 'home/index').
+     * @param array       $data     Variables disponibles en la plantilla y el layout.
+     * @param string|null $layout   Layout que envuelve la plantilla; null para no usar ninguno.
+     */
+    public function render(string $template, array $data = [], ?string $layout = 'layouts/main'): string
     {
-        extract($data);
+        $content = $this->renderFile($template, $data);
 
-        $viewPath = __DIR__ . "/../Views/{$view}.php";
-
-        if (!file_exists($viewPath)) {
-            throw new \Exception("View not found: {$view}");
+        if ($layout === null) {
+            return $content;
         }
 
-        ob_start();
-        require $viewPath;
-        $content = ob_get_clean();
+        // El layout imprime el HTML de la plantilla con la variable $content.
+        return $this->renderFile($layout, $data + ['content' => $content]);
+    }
 
-        // Check if layout should be wrapped or if it is a layout itself
-        if (str_starts_with($view, 'layouts/') || str_starts_with($view, 'errors/')) {
-            return new Response($content);
+    /**
+     * Ejecuta un archivo de vista con $data como variables locales y captura su salida.
+     */
+    private function renderFile(string $template, array $data): string
+    {
+        $file = $this->viewsPath . '/' . $template . '.php';
+
+        if (!is_file($file)) {
+            throw new RuntimeException("Vista no encontrada: {$template}");
         }
 
-        // Wrap in main layout by default
+        extract($data, EXTR_SKIP);
         ob_start();
-        $contentLayout = $content;
-        require __DIR__ . '/../Views/layouts/main.php';
-        $fullContent = ob_get_clean();
-
-        return new Response($fullContent);
+        try {
+            require $file;
+            return (string) ob_get_clean();
+        } catch (\Throwable $e) {
+            ob_end_clean(); // descarta el HTML a medio generar
+            throw $e;
+        }
     }
 }

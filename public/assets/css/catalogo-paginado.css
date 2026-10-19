@@ -1,0 +1,80 @@
+/* ── Agregados del backend al catálogo ───────────────────────────
+Se carga después de catalogo.css. Suma dos zonas a la grilla de main:
+"info" (cantidad de resultados + descarga CSV) y "paginacion". */
+
+main {
+    grid-template-areas:
+        "titulo"
+        "filtros"
+        "info"
+        "catalogo"
+        "paginacion";
+}
+
+.catalogo-info {
+    grid-area: info;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.paginacion {
+    grid-area: paginacion;
+}
+
+.paginacion ul {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.paginacion a,
+.paginacion span,
+.catalogo-info a {
+    display: inline-block;
+    padding: 0.5rem 0.9rem;
+    border: 1.5px solid var(--color-borde);
+    border-radius: var(--radio);
+    color: var(--color-morado);
+    text-decoration: none;
+}
+
+.paginacion a:hover,
+.catalogo-info a:hover {
+    background-color: var(--color-morado);
+    color: #fff;
+}
+
+/* página actual */
+.paginacion [aria-current="page"] {
+    background-color: var(--color-morado);
+    color: #fff;
+    font-weight: 600;
+}
+
+/* buscador y selector de orden dentro del aside de filtros */
+aside input[type="search"],
+aside select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1.5px solid var(--color-borde);
+    border-radius: var(--radio);
+    font: inherit;
+}
+
+.sin-resultados {
+    grid-area: catalogo;
+}
+
+@media (min-width: 1000px) {
+    main {
+        grid-template-areas:
+            "titulo titulo"
+            "filtros info"
+            "filtros catalogo"
+            "filtros paginacion";
+    }
+}

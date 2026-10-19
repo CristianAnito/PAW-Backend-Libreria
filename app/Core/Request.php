@@ -1,54 +1,56 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Core;
 
-class Request
+/**
+ * Petición HTTP entrante (inmutable).
+ * Inspirada en PSR-7: los datos se leen una sola vez y no se modifican.
+ */
+final class Request
 {
-    protected string $uri;
-    protected string $method;
-    protected array $get;
-    protected array $post;
+    /**
+     * @param string $method HTTP en mayúsculas (GET, POST...).
+     * @param string $path   Ruta sin query string ni barra final (ej. '/catalogo').
+     * @param array  $query  Parámetros de la query string ($_GET).
+     * @param array  $body   Campos del formulario ($_POST).
+     */
+    public function __construct(
+        public readonly string $method,
+        public readonly string $path,
+        public readonly array $query = [],
+        public readonly array $body = [],
+    ) {}
 
-    public function __construct()
+    /**
+     * Construye la petición a partir de las superglobales de PHP.
+     */
+    public static function fromGlobals(): self
     {
-        $this->uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
-        // Remove trailing slash except for root
-        if ($this->uri !== '/' && str_ends_with($this->uri, '/')) {
-            $this->uri = rtrim($this->uri, '/');
+        $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+
+        // Sin barra final, salvo la raíz: '/nosotros/' se trata igual que '/nosotros'.
+        if ($path !== '/') {
+            $path = rtrim($path, '/');
         }
-        $this->method = strtoupper($_SERVER['REQUEST_METHOD']);
-        $this->get = $_GET;
-        $this->post = $_POST;
+
+        return new self(
+            strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET'),
+            $path,
+            $_GET,
+            $_POST,
+        );
     }
 
-    public function uri(): string
+    // Un parámetro de la query string (?q=...), o $default si no vino.
+    public function query(string $key, mixed $default = null): mixed
     {
-        return $this->uri;
+        return $this->query[$key] ?? $default;
     }
 
-    public function method(): string
+    // Un campo del formulario (POST), o $default si no vino.
+    public function input(string $key, mixed $default = null): mixed
     {
-        return $this->method;
-    }
-
-    public function get(string $key = null, $default = null)
-    {
-        if ($key === null) {
-            return $this->get;
-        }
-        return $this->get[$key] ?? $default;
-    }
-
-    public function post(string $key = null, $default = null)
-    {
-        if ($key === null) {
-            return $this->post;
-        }
-        return $this->post[$key] ?? $default;
-    }
-
-    public function all(): array
-    {
-        return array_merge($this->get, $this->post);
+        return $this->body[$key] ?? $default;
     }
 }

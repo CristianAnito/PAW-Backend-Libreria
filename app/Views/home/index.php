@@ -12,9 +12,9 @@
 </div>
 
 <section class="info-callout reserva-callout">
-    <h2>Reserva desde donde estés</h2>
+    <h2>Comprá desde donde estés</h2>
     <p>
-        Nuestra tienda online está disponible las 24 horas para que explores el catálogo completo, reserves tus próximas lecturas y hagas seguimiento de las mismas sin salir de casa.
+        Nuestra tienda online está disponible las 24 horas para que explores el catálogo completo y compres tus próximas lecturas sin salir de casa.
     </p>
 </section>
 

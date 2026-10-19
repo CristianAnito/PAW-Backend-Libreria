@@ -1,61 +1,51 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Core;
 
-class Router
+/**
+ * Mapea (método HTTP + URL) a un controlador y acción.
+ * Solo resuelve la ruta: quien la ejecuta es App.
+ */
+final class Router
 {
-    protected array $routes = [];
+    /** @var array<string, array<string, array{0: class-string, 1: string}>> */
+    private array $routes = [];
 
-    public function add(string $method, string $uri, array $action): void
+    /**
+     * @param string $pattern URL con segmentos dinámicos opcionales, ej. '/catalogo/{slug}'.
+     * @param array  $handler [Controlador::class, 'acción'].
+     */
+    public function add(string $method, string $pattern, array $handler): void
     {
-        $this->routes[strtoupper($method)][$uri] = $action;
+        $this->routes[strtoupper($method)][$pattern] = $handler;
     }
 
-    public function dispatch(Request $request): Response
+    /**
+     * Devuelve [handler, params] de la ruta que coincide, o null si ninguna coincide.
+     * params es un array asociativo: ['slug' => 'rayuela'].
+     */
+    public function dispatch(Request $request): ?array
     {
-        $method = $request->method();
-        $uri = $request->uri();
-
-        // Direct match
-        if (isset($this->routes[$method][$uri])) {
-            return $this->callAction($this->routes[$method][$uri], []);
-        }
-
-        // Dynamic route matching (e.g. /catalogo/{slug} or /reservar/{slug})
-        foreach ($this->routes[$method] ?? [] as $routeUri => $action) {
-            $pattern = $this->convertToRegex($routeUri);
-            if (preg_match($pattern, $uri, $matches)) {
-                array_shift($matches); // Remove full match
-                return $this->callAction($action, $matches);
+        foreach ($this->routes[$request->method] ?? [] as $pattern => $handler) {
+            if (preg_match($this->toRegex($pattern), $request->path, $matches)) {
+                // Se quedan solo las capturas con nombre (descarta las numéricas).
+                $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
+                return [$handler, $params];
             }
         }
 
-        // 404 Not Found
-        $controller = new \App\Controllers\ErrorController();
-        return $controller->notFound();
+        return null;
     }
 
-    protected function convertToRegex(string $routeUri): string
+    /**
+     * '/catalogo/{slug}' -> '#^/catalogo/(?P<slug>[A-Za-z0-9_-]+)$#'
+     * Las rutas fijas se comparan antes porque se registran antes en routes.php.
+     */
+    private function toRegex(string $pattern): string
     {
-        // Convert {param} to named/unnamed regex capture group
-        $pattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '([a-zA-Z0-9\-_]+)', $routeUri);
-        return "#^" . $pattern . "$#";
-    }
-
-    protected function callAction(array $action, array $params): Response
-    {
-        [$controllerClass, $method] = $action;
-        
-        if (!class_exists($controllerClass)) {
-            throw new \Exception("Controller not found: {$controllerClass}");
-        }
-
-        $controller = new $controllerClass();
-
-        if (!method_exists($controller, $method)) {
-            throw new \Exception("Method {$method} not found in controller {$controllerClass}");
-        }
-
-        return call_user_func_array([$controller, $method], $params);
+        // preg_quote escapa la parte fija (ej. el '.' de 'export.csv'); deja '{slug}' como '\{slug\}'.
+        $regex = preg_replace('/\\\\\{(\w+)\\\\\}/', '(?P<$1>[A-Za-z0-9_-]+)', preg_quote($pattern, '#'));
+        return '#^' . $regex . '$#';
     }
 }

@@ -13,6 +13,6 @@ final class ErrorController extends Controller
     // Ruta inexistente: HTTP 404.
     public function notFound(): Response
     {
-        return $this->render('errors/404', ['title' => 'Página no encontrada'], 404);
+        return parent::notFound();
     }
 }
