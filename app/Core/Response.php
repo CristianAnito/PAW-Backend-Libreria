@@ -69,6 +69,10 @@ final class Response
     {
         http_response_code($this->status);
 
+        // PHP agrega "X-Powered-By: PHP/8.x.x": revela la versión exacta del servidor, que a un
+        // atacante le sirve para buscar vulnerabilidades conocidas. No se envía.
+        header_remove('X-Powered-By');
+
         // Cada cookie viaja en su propia cabecera Set-Cookie.
         foreach ($this->cookies as $name => $cookie) {
             setcookie($name, $cookie['value'], $cookie['options']);

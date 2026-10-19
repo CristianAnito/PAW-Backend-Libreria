@@ -36,6 +36,14 @@ final class App
             $response = $cors->isPreflight($request)
                 ? Response::empty()
                 : ($csrf->check($request) ?? $this->handle($request));
+        } catch (HttpException $e) {
+            // Error esperado (ej. 401 sin sesión): su mensaje está pensado para el usuario.
+            $response = Response::error($e->getMessage(), $e->status);
+            if ($e->status === 401 && AuthCookie::read($request) !== null) {
+                // Había una cookie pero no sirve (vencida, alterada, usuario borrado):
+                // se borra para que el navegador no la siga enviando.
+                $response = AuthCookie::clear($response);
+            }
         } catch (Throwable $e) {
             // Cualquier error no previsto: se registra y se responde 500 sin detalles internos.
             $response = $errors->handle($e);

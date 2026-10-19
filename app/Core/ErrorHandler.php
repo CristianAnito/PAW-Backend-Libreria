@@ -28,6 +28,9 @@ final class ErrorHandler
         error_reporting(E_ALL);
         ini_set('display_errors', '0'); // un warning impreso rompería el JSON de la respuesta
         ini_set('log_errors', '0');     // lo registra Monolog
+        // Los stack traces no incluyen los argumentos de las funciones: si algo falla durante
+        // un registro o un login, la contraseña del usuario no queda escrita en el log.
+        ini_set('zend.exception_ignore_args', '1');
 
         // Warnings y notices se convierten en excepciones: se manejan igual que cualquier error.
         set_error_handler(function (int $severity, string $message, string $file, int $line): bool {

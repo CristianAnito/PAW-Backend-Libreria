@@ -138,22 +138,11 @@ final class AuthController extends Controller
      * GET /api/auth/yo
      * 200: {"data": usuario} si hay sesión. 401 si no hay (o el token venció o fue alterado).
      * El frontend lo consulta al cargar para saber si mostrar "Hola, ..." o "Iniciar sesión".
+     * Sin sesión, requireAuth() corta con 401 (y App borra una cookie vencida o alterada).
      */
     public function me(Request $request): Response
     {
-        $token = AuthCookie::read($request);
-        $claims = $token !== null ? JwtService::fromConfig()->verify($token) : null;
-
-        // Además del token válido, el usuario tiene que seguir existiendo.
-        $user = $claims !== null ? $this->users()->findById($claims['id']) : null;
-
-        if ($user === null) {
-            $response = Response::error('No hay una sesión iniciada.', 401);
-            // Si había una cookie (vencida o inválida), se borra para no seguir enviándola.
-            return $token !== null ? AuthCookie::clear($response) : $response;
-        }
-
-        return Response::json(['data' => $user->toPublicArray()]);
+        return Response::json(['data' => $this->requireAuth($request)->toPublicArray()]);
     }
 
     // Emite el token, lo pone en la cookie y responde con los datos públicos del usuario.
