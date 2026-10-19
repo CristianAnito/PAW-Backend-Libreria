@@ -19,6 +19,8 @@ Pago:      <?= $order::PAYMENT_METHOD ?>
 
 
 Cliente
+Usuario:   <?= $order->username ?>
+
 Nombre:    <?= $order->firstName ?> <?= $order->lastName ?>
 
 DNI:       <?= $order->dni ?>

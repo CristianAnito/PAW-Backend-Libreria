@@ -9,8 +9,9 @@ use RuntimeException;
 
 /**
  * Finalizar compra: validación en el servidor de los datos del cliente
- * y envío del pedido por mail al personal de la librería.
+ * y envío del pedido por mail al personal de la librería (dirección configurable: MAIL_TO).
  * El formulario lo muestra el frontend; acá solo llega el envío (POST con JSON).
+ * Solo para usuarios con la sesión iniciada (el carrito es de cada usuario).
  */
 final class CheckoutController extends Controller
 {
@@ -19,11 +20,13 @@ final class CheckoutController extends Controller
     /**
      * POST /api/compra  {"nombre": ..., "apellido": ..., "documento": ..., "email": ..., "telefono": ...}
      *
-     * 201: compra registrada. 409: carrito vacío. 422: datos inválidos. 503: no se pudo enviar el mail.
+     * 201: compra registrada. 401: sin sesión. 409: carrito vacío. 422: datos inválidos.
+     * 503: no se pudo enviar el mail (el carrito no se vacía, así se puede reintentar).
      */
     public function submit(Request $request): Response
     {
-        $cart = $this->cart();
+        $user = $this->requireAuth($request);
+        $cart = $this->cart($user);
         if ($cart->isEmpty()) {
             return Response::error('El carrito está vacío.', 409);
         }
@@ -56,17 +59,22 @@ final class CheckoutController extends Controller
             $data['telefono'],
             $cart->lines(),
             $cart->total(),
+            $user->username,
         );
 
+        // Se crea fuera del try: si el mail está mal configurado (ej. falta BREVO_API_KEY) es un
+        // error del servidor, que el ErrorHandler registra en el log y responde con un 500 genérico.
+        $mailer = $this->mailer();
+
         try {
-            $this->mailer()->send(
+            $mailer->send(
                 Config::get('mail.to'),
                 "Nueva compra de {$order->firstName} {$order->lastName}",
                 (new View(dirname(__DIR__) . '/Views'))->render('emails/order', ['order' => $order]),
                 replyTo: $order->email,
             );
         } catch (RuntimeException) {
-            // El detalle ya quedó en el log (ver Mailer); al cliente, un mensaje genérico.
+            // El detalle ya quedó en el log (ver Core/Mail); al cliente, un mensaje genérico.
             return Response::error('No pudimos registrar tu compra en este momento. Intentá nuevamente más tarde.', 503);
         }
 

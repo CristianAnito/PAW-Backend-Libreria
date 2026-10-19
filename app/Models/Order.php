@@ -38,6 +38,7 @@ final class Order
         public readonly string $phone,
         public readonly array $lines,
         public readonly float $total,
+        public readonly string $username,   // usuario registrado que hizo la compra
     ) {}
 
     /**
