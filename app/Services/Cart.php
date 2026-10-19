@@ -82,6 +82,31 @@ final class Cart
         return $this->lines() === [];
     }
 
+    // true si el libro ya está en el carrito.
+    public function has(string $slug): bool
+    {
+        return isset($this->raw()[$slug]);
+    }
+
+    /**
+     * Representación JSON del carrito.
+     */
+    public function toArray(): array
+    {
+        $lines = $this->lines();
+
+        return [
+            'items' => array_map(fn (array $line) => [
+                'book'     => $line['book']->toArray(),
+                'quantity' => $line['quantity'],
+                'subtotal' => $line['subtotal'],
+            ], $lines),
+            'total'        => array_sum(array_column($lines, 'subtotal')),
+            'count'        => $this->count(),
+            'max_quantity' => self::MAX_QUANTITY,
+        ];
+    }
+
     private function raw(): array
     {
         return Session::get(self::KEY, []);

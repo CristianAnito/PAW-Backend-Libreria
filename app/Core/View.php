@@ -6,7 +6,9 @@ namespace App\Core;
 use RuntimeException;
 
 /**
- * Motor de plantillas mínimo: archivos .php con HTML dentro de app/Views.
+ * Motor de plantillas mínimo: archivos .php dentro de app/Views.
+ * Las páginas del sitio las arma el frontend (SPA); acá solo quedan plantillas
+ * que genera el servidor, como el cuerpo de los mails.
  */
 final class View
 {
@@ -14,28 +16,11 @@ final class View
     public function __construct(private string $viewsPath) {}
 
     /**
-     * Renderiza una plantilla dentro de un layout y devuelve el HTML.
+     * Ejecuta la plantilla con $data como variables locales y devuelve su salida.
      *
-     * @param string      $template Ruta relativa sin extensión (ej. 'home/index').
-     * @param array       $data     Variables disponibles en la plantilla y el layout.
-     * @param string|null $layout   Layout que envuelve la plantilla; null para no usar ninguno.
+     * @param string $template Ruta relativa sin extensión (ej. 'emails/order').
      */
-    public function render(string $template, array $data = [], ?string $layout = 'layouts/main'): string
-    {
-        $content = $this->renderFile($template, $data);
-
-        if ($layout === null) {
-            return $content;
-        }
-
-        // El layout imprime el HTML de la plantilla con la variable $content.
-        return $this->renderFile($layout, $data + ['content' => $content]);
-    }
-
-    /**
-     * Ejecuta un archivo de vista con $data como variables locales y captura su salida.
-     */
-    private function renderFile(string $template, array $data): string
+    public function render(string $template, array $data = []): string
     {
         $file = $this->viewsPath . '/' . $template . '.php';
 
@@ -49,7 +34,7 @@ final class View
             require $file;
             return (string) ob_get_clean();
         } catch (\Throwable $e) {
-            ob_end_clean(); // descarta el HTML a medio generar
+            ob_end_clean(); // descarta la salida a medio generar
             throw $e;
         }
     }

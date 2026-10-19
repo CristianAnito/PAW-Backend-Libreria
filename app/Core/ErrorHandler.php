@@ -10,25 +10,24 @@ use Throwable;
 /**
  * Manejo centralizado de errores.
  * - Registra el detalle completo en el log.
- * - Al usuario le muestra una página genérica (500), sin rutas, consultas ni stack traces.
- * - Solo en desarrollo (debug = true) se agrega el detalle en pantalla.
+ * - Al cliente le responde un JSON genérico (500), sin rutas, consultas ni stack traces.
+ * - Solo en desarrollo (debug = true) se agrega el detalle en la respuesta.
  */
 final class ErrorHandler
 {
     public function __construct(
         private LoggerInterface $logger,
-        private View $view,
         private bool $debug,
     ) {}
 
     /**
-     * Configura PHP para que ningún error llegue a la pantalla sin pasar por acá.
+     * Configura PHP para que ningún error llegue a la salida sin pasar por acá.
      */
     public function register(): void
     {
         error_reporting(E_ALL);
-        ini_set('display_errors', $this->debug ? '1' : '0');
-        ini_set('log_errors', '0'); // lo registra Monolog
+        ini_set('display_errors', '0'); // un warning impreso rompería el JSON de la respuesta
+        ini_set('log_errors', '0');     // lo registra Monolog
 
         // Warnings y notices se convierten en excepciones: se manejan igual que cualquier error.
         set_error_handler(function (int $severity, string $message, string $file, int $line): bool {
@@ -45,7 +44,7 @@ final class ErrorHandler
     }
 
     /**
-     * Registra la excepción y devuelve la respuesta de error para el usuario.
+     * Registra la excepción y devuelve la respuesta de error para el cliente.
      */
     public function handle(Throwable $e): Response
     {
@@ -55,17 +54,23 @@ final class ErrorHandler
             'trace'     => $e->getTraceAsString(),
         ]);
 
-        try {
-            $html = $this->view->render('errors/500', [
-                'title'       => 'Error del servidor',
-                'currentPath' => '',
-                'exception'   => $this->debug ? $e : null,
-            ]);
-        } catch (Throwable) {
-            // Si falla incluso la vista de error, texto plano sin detalles.
-            $html = 'Ocurrió un error inesperado. Intentá nuevamente más tarde.';
+        $error = ['message' => 'Ocurrió un error inesperado. Intentá nuevamente más tarde.'];
+
+        // Solo en desarrollo (APP_ENV=development). En producción nunca se expone el detalle.
+        if ($this->debug) {
+            $error['debug'] = [
+                'exception' => $e::class,
+                'message'   => $e->getMessage(),
+                'file'      => $e->getFile() . ':' . $e->getLine(),
+                'trace'     => explode("\n", $e->getTraceAsString()),
+            ];
         }
 
-        return new Response($html, 500);
+        try {
+            return Response::json(['error' => $error], 500);
+        } catch (Throwable) {
+            // Si el detalle no se puede codificar (ej. UTF-8 inválido), mensaje fijo.
+            return new Response('{"error":{"message":"Ocurrió un error inesperado."}}', 500);
+        }
     }
 }

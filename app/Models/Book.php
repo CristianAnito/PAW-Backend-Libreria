@@ -10,14 +10,14 @@ final class Book
 {
     public function __construct(
         public readonly int $id,
-        public readonly string $slug,      // identificador para la URL: /catalogo/{slug}
+        public readonly string $slug,      // identificador para la URL: /api/libros/{slug}
         public readonly string $title,
         public readonly string $author,
         public readonly string $genre,
         public readonly float $price,
         public readonly string $summary,   // descripción corta (listado)
         public readonly string $synopsis,  // descripción larga (detalle)
-        public readonly ?string $cover,    // archivo en public/assets/media/libros, o null
+        public readonly ?string $cover,    // nombre del archivo de la tapa (lo sirve el frontend), o null
     ) {}
 
     public static function fromArray(array $data): self
@@ -35,11 +35,23 @@ final class Book
         );
     }
 
-    // URL pública de la tapa; si no tiene, la imagen genérica.
-    public function coverUrl(): string
+    /**
+     * Representación JSON del libro.
+     * La tapa se envía como nombre de archivo: las imágenes son parte del frontend,
+     * que arma la URL (media/libros/{cover}) o usa la imagen genérica si es null.
+     */
+    public function toArray(): array
     {
-        return $this->cover !== null
-            ? '/assets/media/libros/' . rawurlencode($this->cover)
-            : '/assets/media/sinfoto.png';
+        return [
+            'id'       => $this->id,
+            'slug'     => $this->slug,
+            'title'    => $this->title,
+            'author'   => $this->author,
+            'genre'    => $this->genre,
+            'price'    => $this->price,
+            'summary'  => $this->summary,
+            'synopsis' => $this->synopsis,
+            'cover'    => $this->cover,
+        ];
     }
 }

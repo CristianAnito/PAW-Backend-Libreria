@@ -1,38 +1,45 @@
 # PAW Backend - Librería
 
-Backend en PHP del sitio web de la librería. Patrón MVC, sin framework externo.
-El frontend estático (TP1) está en el repositorio `PAW--Frontend--TP1`.
+API REST en PHP del sitio web de la librería. Patrón MVC, sin framework externo.
+Responde **JSON**; las páginas las arma el frontend (SPA en JavaScript), que está en el repositorio `PAW--Frontend--TP1`.
 
 ## Requisitos
 
 - PHP 8.1 o superior
 - Composer
-- Servidor web con `DocumentRoot` en `public/` (o `php -S localhost:8000 -t public`)
+- Servidor web con `DocumentRoot` en `public/` (o el servidor de desarrollo de PHP)
 
 ## Instalación
 
 ```bash
 composer install
 cp .env.example .env
-php -S localhost:8000 -t public
+php -S localhost:8000 -t public public/index.php
 ```
+
+La API queda en `http://localhost:8000/api`. Para usar el sitio, levantar también el frontend
+(ver su README) en `http://localhost:5501`.
 
 ## Arquitectura
 
+```
+Navegador ── SPA (HTML + CSS + JS) ──fetch JSON──▶ API (este repo) ──▶ books.json / sesión
+```
+
 Todas las peticiones ingresan por `public/index.php` (front controller).
-El flujo es: `Request` → `Router` → `Controller` → `Repository/Model` → `View` → `Response`.
+El flujo es: `Request` → `Router` → `Controller` → `Repository/Model` → `Response` (JSON).
 
 ### Estructura
 
 | Carpeta | Contenido |
 |---|---|
-| `public/` | Único directorio expuesto: front controller, `.htaccess`, assets |
-| `app/Core/` | Infraestructura: Request, Response, Router, View, Config, Logger, ErrorHandler, Validator, Mailer |
-| `app/Controllers/` | Reciben la petición, coordinan modelo y vista |
-| `app/Models/` | Entidades (Book, Reservation) |
+| `public/` | Único directorio expuesto: front controller y `.htaccess` |
+| `app/Core/` | Infraestructura: Request, Response, Router, Cors, Config, Logger, ErrorHandler, Validator, Mailer, Session, View |
+| `app/Controllers/` | Reciben la petición, coordinan el modelo y devuelven JSON |
+| `app/Models/` | Entidades (Book, Order) |
 | `app/Repositories/` | Acceso a datos detrás de una interfaz |
-| `app/Services/` | Lógica auxiliar (exportación CSV) |
-| `app/Views/` | Plantillas HTML, layouts y parciales |
+| `app/Services/` | Lógica auxiliar (carrito, paginado, exportación CSV) |
+| `app/Views/emails/` | Plantillas de texto de los mails (lo único que se genera en el servidor) |
 | `config/` | Configuración y definición de rutas |
 | `storage/` | Datos (`books.json`) y logs |
 
@@ -40,44 +47,54 @@ El flujo es: `Request` → `Router` → `Controller` → `Repository/Model` → 
 
 | Problemática | Módulo | Referencia |
 |---|---|---|
-| Análisis de peticiones HTTP | `Core/Request` | PSR-7 (concepto) |
+| Análisis de peticiones HTTP | `Core/Request` (query, cuerpo JSON, cabeceras) | PSR-7 (concepto) |
 | Mapeo de URLs a funcionalidades | `Core/Router` + `config/routes.php` | |
-| Generación de respuestas HTTP | `Core/Response` | PSR-7 (concepto) |
+| Generación de respuestas HTTP | `Core/Response` (`json()`, `error()`) | PSR-7 (concepto) |
+| Acceso desde otro origen (SPA) | `Core/Cors` + `config/cors.php` | CORS |
 | Generación de registros | `Core/Logger` (Monolog) | PSR-3 |
 | Persistencia | `Repositories/*` + `Models/*` | Repository pattern |
 | Configuración | `Core/Config` + `config/*.php` + `.env` | |
-| Representaciones de la información | HTML: `Core/View`. CSV: `Services/CsvExporter`. Otros formatos: nuevos servicios | |
+| Representaciones de la información | JSON: `Response::json`. CSV: `Services/CsvExporter`. Texto (mail): `Core/View` | |
 | Validación de entrada | `Core/Validator` | |
 | Envío de correo | `Core/Mailer` (PHPMailer) | |
-| Manejo de errores | `Core/ErrorHandler` + vistas `errors/` | |
+| Manejo de errores | `Core/ErrorHandler` (JSON genérico) | |
 | Carga de clases | Composer | PSR-4 |
 
-### Rutas
+### Rutas de la API
 
-| Método | URL | Controlador |
-|---|---|---|
-| GET | `/` | `HomeController@index` |
-| GET | `/nosotros` | `AboutController@index` |
-| GET | `/catalogo` | `CatalogController@index` |
-| GET | `/catalogo/export.csv` | `CatalogController@exportCsv` |
-| GET | `/catalogo/{slug}` | `CatalogController@show` |
-| GET | `/reservar/{slug}` | `ReservationController@form` |
-| POST | `/reservar` | `ReservationController@submit` |
+| Método | URL | Controlador | Respuesta |
+|---|---|---|---|
+| GET | `/api/libros?q=&orden=&page=` | `CatalogController@index` | `{data: [libro], meta: {query, sort, page, per_page, total, total_pages}, sorts}` |
+| GET | `/api/libros/export.csv?q=&orden=` | `CatalogController@exportCsv` | archivo CSV |
+| GET | `/api/libros/{slug}` | `CatalogController@show` | `{data: libro}` |
+| GET | `/api/carrito` | `CartController@index` | `{data: carrito}` |
+| POST | `/api/carrito/items` `{libro, cantidad?}` | `CartController@add` | `{data: carrito}` |
+| PATCH | `/api/carrito/items/{slug}` `{cantidad}` | `CartController@update` | `{data: carrito}` |
+| DELETE | `/api/carrito/items/{slug}` | `CartController@remove` | `{data: carrito}` |
+| POST | `/api/compra` `{nombre, apellido, documento, email, telefono}` | `CheckoutController@submit` | 201 (desactivada por ahora) |
+
+`carrito = {items: [{book, quantity, subtotal}], total, count, max_quantity}`
+
+**Errores:** `{"error": {"message": "...", "fields": {"campo": "mensaje"}}}` con el código HTTP correspondiente
+(404 recurso inexistente, 409 carrito vacío, 422 datos inválidos con `fields`, 500 error interno, 503 mail no enviado).
 
 ## Decisiones de diseño
 
-- **Búsqueda del catálogo:** `GET` con parámetros `q`, `page` y `per_page` en la query string.
-- **Paginación:** `per_page` restringido a 5, 10 o 20 (por defecto 10).
-- **Libro o página inexistente:** respuesta HTTP 404 con vista `errors/404`.
+- **API JSON + SPA:** el backend no genera HTML; el frontend pide los datos con `fetch` y arma las vistas.
+- **Búsqueda del catálogo:** `GET` con parámetros `q`, `orden` y `page` en la query string.
+- **Paginación:** `per_page` configurable en `config/catalog.php`.
+- **Libro o página inexistente:** HTTP 404 con mensaje JSON; el frontend muestra su vista 404.
 - **Exportación CSV:** mismos parámetros que el listado; cabeceras `text/csv` y `Content-Disposition: attachment`.
-- **Reserva:** `POST` con `application/x-www-form-urlencoded`; redirección tras el éxito (Post/Redirect/Get). Las reglas de validación del backend replican las del frontend.
+- **Carrito:** se guarda en la sesión de PHP (cookie `HttpOnly`, `SameSite=Lax`). El frontend envía la cookie con `credentials: 'include'`.
+- **CORS:** solo se autorizan los orígenes de `CORS_ORIGINS` (nunca `*`, porque se envían cookies). El frontend y la API deben estar en el mismo *sitio* (ej. ambos en `localhost`, distinto puerto) para que la cookie viaje.
+- **Validación:** las reglas del backend (`Models/Order`) se repiten en el frontend (`js/validaciones.js`) para los atributos HTML; el backend siempre valida de nuevo.
 - **Correo:** destinatario configurable mediante `MAIL_TO` en `.env`.
-- **Errores:** en `production` se muestra un mensaje genérico y el detalle se registra en `storage/logs`; en `development` se muestra el detalle.
+- **Errores:** en `production` se responde un mensaje genérico y el detalle se registra en `storage/logs`; en `development` se agrega el detalle en `error.debug`.
 - **Persistencia:** `BookRepositoryInterface` aísla el origen de datos (`books.json` ahora, base de datos en el TP siguiente).
 
 ## Configuración
 
-Variables en `.env` (ver `.env.example`): `APP_ENV`, `APP_URL`, `MAIL_TO`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS`.
+Variables en `.env` (ver `.env.example`): `APP_ENV`, `APP_URL`, `CORS_ORIGINS`, `MAIL_DRIVER`, `MAIL_TO`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS`.
 
 ## Flujo de trabajo del equipo
 

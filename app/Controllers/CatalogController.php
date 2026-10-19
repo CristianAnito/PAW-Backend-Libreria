@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\{Config, Request, Response};
+use App\Models\Book;
 use App\Repositories\BookRepositoryInterface;
 use App\Services\{CsvExporter, Paginator};
 
@@ -13,7 +14,9 @@ use App\Services\{CsvExporter, Paginator};
 final class CatalogController extends Controller
 {
     /**
-     * GET /catalogo?q=texto&orden=precio-asc&page=1
+     * GET /api/libros?q=texto&orden=precio-asc&page=1
+     *
+     * Respuesta: {"data": [libro...], "meta": {paginado y filtros aplicados}, "sorts": {clave: texto}}
      */
     public function index(Request $request): Response
     {
@@ -24,47 +27,47 @@ final class CatalogController extends Controller
 
         // ?page=abc o ?page=0: página inexistente.
         if ($page === null) {
-            return $this->notFound();
+            return $this->notFound('La página solicitada no existe.');
         }
 
         $paginator = new Paginator($this->books()->search($query, $sort), $page, $perPage);
 
         // ?page=99 con menos páginas: página inexistente.
         if (!$paginator->isValidPage()) {
-            return $this->notFound();
+            return $this->notFound('La página solicitada no existe.');
         }
 
-        return $this->render('catalog/index', [
-            'title'          => $query !== '' ? "Resultados para \"{$query}\"" : 'Catálogo',
-            'extraCss'       => ['/assets/css/catalogo.css', '/assets/css/catalogo-paginado.css'],
-            'books'          => $paginator->items(),
-            'paginator'      => $paginator,
-            'query'          => $query,
-            'sort'           => $sort,
-            'sortOptions'    => BookRepositoryInterface::SORTS,
+        return Response::json([
+            'data' => array_map(fn (Book $book) => $book->toArray(), $paginator->items()),
+            'meta' => [
+                'query'       => $query,
+                'sort'        => $sort,
+                'page'        => $paginator->page,
+                'per_page'    => $paginator->perPage,
+                'total'       => $paginator->total,
+                'total_pages' => $paginator->totalPages,
+            ],
+            // Órdenes disponibles: el frontend arma el <select> con esta lista.
+            'sorts' => BookRepositoryInterface::SORTS,
         ]);
     }
 
     /**
-     * GET /catalogo/{slug}
+     * GET /api/libros/{slug}
      */
     public function show(Request $request, string $slug): Response
     {
         $book = $this->books()->findBySlug($slug);
 
         if ($book === null) {
-            return $this->notFound();
+            return $this->notFound('El libro solicitado no existe.');
         }
 
-        return $this->render('catalog/show', [
-            'title'    => $book->title,
-            'extraCss' => ['/assets/css/libros.css'],
-            'book'     => $book,
-        ]);
+        return Response::json(['data' => $book->toArray()]);
     }
 
     /**
-     * GET /catalogo/export.csv?q=texto&orden=precio-asc
+     * GET /api/libros/export.csv?q=texto&orden=precio-asc
      * Exporta todos los resultados de la búsqueda (sin paginar), en el orden elegido.
      */
     public function exportCsv(Request $request): Response

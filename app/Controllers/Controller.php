@@ -3,42 +3,34 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Core\{Config, Request, Response, View};
+use App\Core\{Config, Response};
 use App\Repositories\{BookRepositoryInterface, JsonBookRepository};
 use App\Services\Cart;
 
 /**
- * Clase base de los controladores.
+ * Clase base de los controladores de la API.
+ * Todas las acciones devuelven una Response con JSON (salvo la exportación CSV).
  */
 abstract class Controller
 {
     private ?BookRepositoryInterface $books = null;
 
-    public function __construct(protected View $view) {}
-
     /**
-     * Renderiza una vista dentro del layout y devuelve una Response.
-     *
-     * @param string $template Ruta relativa a app/Views, sin extensión (ej. 'home/index').
-     * @param array  $data     Variables disponibles en la vista y el layout.
-     * @param int    $status   Código HTTP.
+     * Respuesta 404 (libro o página inexistente).
      */
-    protected function render(string $template, array $data = [], int $status = 200): Response
+    protected function notFound(string $message = 'El recurso solicitado no existe.'): Response
     {
-        // Ruta actual: la usa nav.php para marcar el enlace activo.
-        $data['currentPath'] ??= Request::fromGlobals()->path;
-        // Ejemplares en el carrito, para el contador del menú.
-        $data['cartCount'] ??= $this->cart()->count();
-
-        return new Response($this->view->render($template, $data), $status);
+        return Response::error($message, 404);
     }
 
     /**
-     * Respuesta 404 (ruta, libro o página inexistente).
+     * Respuesta 422 Unprocessable Content: la petición llegó bien pero los datos no son válidos.
+     *
+     * @param array<string, string> $fields Mensaje de error de cada campo.
      */
-    protected function notFound(): Response
+    protected function validationError(array $fields): Response
     {
-        return $this->render('errors/404', ['title' => 'Página no encontrada'], 404);
+        return Response::error('Revisá los campos marcados.', 422, $fields);
     }
 
     // Acceso a los libros (hoy desde el JSON; se crea una sola vez por petición).
