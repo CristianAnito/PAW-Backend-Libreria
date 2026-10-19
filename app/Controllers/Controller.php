@@ -3,13 +3,17 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Core\{Request, Response, View};
+use App\Core\{Config, Request, Response, View};
+use App\Repositories\{BookRepositoryInterface, JsonBookRepository};
+use App\Services\Cart;
 
 /**
  * Clase base de los controladores.
  */
 abstract class Controller
 {
+    private ?BookRepositoryInterface $books = null;
+
     public function __construct(protected View $view) {}
 
     /**
@@ -23,7 +27,29 @@ abstract class Controller
     {
         // Ruta actual: la usa nav.php para marcar el enlace activo.
         $data['currentPath'] ??= Request::fromGlobals()->path;
+        // Ejemplares en el carrito, para el contador del menú.
+        $data['cartCount'] ??= $this->cart()->count();
 
         return new Response($this->view->render($template, $data), $status);
+    }
+
+    /**
+     * Respuesta 404 (ruta, libro o página inexistente).
+     */
+    protected function notFound(): Response
+    {
+        return $this->render('errors/404', ['title' => 'Página no encontrada'], 404);
+    }
+
+    // Acceso a los libros (hoy desde el JSON; se crea una sola vez por petición).
+    protected function books(): BookRepositoryInterface
+    {
+        return $this->books ??= new JsonBookRepository(Config::get('catalog.books_file'));
+    }
+
+    // Carrito del visitante (guardado en la sesión).
+    protected function cart(): Cart
+    {
+        return new Cart($this->books());
     }
 }

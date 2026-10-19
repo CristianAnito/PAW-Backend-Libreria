@@ -1,29 +1,45 @@
 <?php
-/*
+declare(strict_types=1);
+
 namespace App\Models;
 
-class Book
+/**
+ * Entidad Libro. Inmutable: se crea a partir de los datos del repositorio.
+ */
+final class Book
 {
-    public int $id;
-    public string $title;
-    public string $slug;
-    public string $author;
-    public float $price;
-    public int $stock;
-    public string $description;
-    public string $cover;
+    public function __construct(
+        public readonly int $id,
+        public readonly string $slug,      // identificador para la URL: /catalogo/{slug}
+        public readonly string $title,
+        public readonly string $author,
+        public readonly string $genre,
+        public readonly float $price,
+        public readonly string $summary,   // descripción corta (listado)
+        public readonly string $synopsis,  // descripción larga (detalle)
+        public readonly ?string $cover,    // archivo en public/assets/media/libros, o null
+    ) {}
 
-    public function __construct(array $data = [])
+    public static function fromArray(array $data): self
     {
-        $this->id = $data['id'] ?? 0;
-        $this->title = $data['title'] ?? '';
-        $this->slug = $data['slug'] ?? '';
-        $this->author = $data['author'] ?? '';
-        $this->price = $data['price'] ?? 0.0;
-        $this->stock = $data['stock'] ?? 0;
-        $this->description = $data['description'] ?? '';
-        $this->cover = $data['cover'] ?? '';
+        return new self(
+            (int) $data['id'],
+            (string) $data['slug'],
+            (string) $data['title'],
+            (string) $data['author'],
+            (string) ($data['genre'] ?? ''),
+            (float) $data['price'],
+            (string) ($data['summary'] ?? ''),
+            (string) ($data['synopsis'] ?? ''),
+            $data['cover'] ?? null,
+        );
+    }
+
+    // URL pública de la tapa; si no tiene, la imagen genérica.
+    public function coverUrl(): string
+    {
+        return $this->cover !== null
+            ? '/assets/media/libros/' . rawurlencode($this->cover)
+            : '/assets/media/sinfoto.png';
     }
 }
-*/
-// Código comentado como ejemplo para futuras consignas.

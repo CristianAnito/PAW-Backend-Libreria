@@ -27,6 +27,6 @@ $active = static fn (string $url): string =>
     <div class="nav-grupo-der">
         <a href="/iniciar-sesion"<?= $active('/iniciar-sesion') ?>>Iniciar sesión</a>
         <a href="/registrarse"<?= $active('/registrarse') ?>>Registrarse</a>
-        <a href="/carrito" class="nav-carrito<?= $currentPath === '/carrito' ? ' activo' : '' ?>">Carrito 🛒</a>
+        <a href="/carrito" class="nav-carrito<?= $currentPath === '/carrito' ? ' activo' : '' ?>">Carrito 🛒<?= !empty($cartCount) ? ' (' . e($cartCount) . ')' : '' ?></a>
     </div>
 </nav>

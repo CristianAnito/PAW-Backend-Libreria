@@ -1,0 +1,338 @@
+/* ── CATÁLOGO ─────────────────────────────────────────── */
+/* style.css ya trae reglas para "#catalogo", pero con la paleta turquesa
+anterior en algunos detalles (como la rayita del h1). Este archivo, cargado
+después, las sobrescribe con la paleta violeta/blanco del manual, siguiendo
+el mismo patrón mobile-first que formulario.css, contacto.css y carrito.css */
+
+/* ── Layout base mobile: 1 sola columna ── */
+main {
+    display: grid; /*convierte a main en contenedor grid: sus hijos directos
+    (el h1, el aside de filtros y la section del catálogo) pasan a ser
+    ítems de esta grilla*/
+    grid-template-columns: minmax(0, 1fr); /*una sola columna en mobile, que
+    puede achicarse (minmax(0, ...)) sin desbordar la pantalla*/
+    gap: 2rem; /*separación entre el título, los filtros y la grilla de libros*/
+    /*grid-template-areas le pone nombre a cada celda del layout. Cada línea
+    entre comillas es una fila, y cada palabra es la columna en la que va.
+    Esto reemplaza al viejo "order: -1" (que dejó de funcionar bien apenas
+    el h1 pasó a ser hermano del aside, porque los ordenaba a los dos entre
+    sí sin que yo se lo pidiera): acá cada elemento va exactamente donde
+    dice su nombre, sin depender del orden en que aparecen en el HTML*/
+    grid-template-areas:
+        "titulo"
+        "filtros"
+        "catalogo";
+}
+
+/* conecta cada elemento con el nombre de su celda de arriba */
+main>h1 {
+    grid-area: titulo;
+}
+
+aside {
+    grid-area: filtros;
+}
+
+#catalogo {
+    grid-area: catalogo;
+}
+
+/* ── Filtros (aside) ── */
+aside {
+    background-color: var(--color-fondo); /*fondo blanco, como el resto de
+    las tarjetas del sitio*/
+    border: 1.5px solid var(--color-borde); /*borde sutil*/
+    border-radius: var(--radio); /*esquinas redondeadas del manual*/
+    padding: 1.5rem; /*espacio interno*/
+    box-shadow: 0 2px 12px rgba(92, 6, 140, .08); /*sombra suave violeta,
+    en vez de la variable --sombra compartida (que tiene tinte celeste de
+    la paleta anterior)*/
+    height: max-content; /*evita que, en desktop, el aside se estire para
+    igualar el alto de la grilla de libros (que es más alta)*/
+}
+
+aside>h2 {
+    font-family: var(--fuente-titulo); /*tipografía de títulos del manual*/
+    color: var(--color-morado); /*color principal del manual*/
+    font-size: 1.2rem; /*tamaño de título de sección*/
+    font-weight: 600; /*Semibold, el peso que el manual define para títulos*/
+    margin-bottom: 1.25rem; /*separación con el form de abajo*/
+    padding-bottom: 0.75rem; /*espacio entre el texto y la línea divisoria*/
+    border-bottom: 1px solid var(--color-borde); /*línea sutil que separa el
+    título del contenido*/
+}
+
+aside form {
+    display: flex; /*acomoda los 3 fieldsets en columna*/
+    flex-direction: column; /*uno debajo del otro*/
+    gap: 1.5rem; /*separación entre "Precio", "Autor" y "Género"*/
+}
+
+/* ── Fieldsets de filtros ── */
+aside fieldset {
+    border: none; /*sin el borde gris por defecto del navegador: cada grupo
+    ya se distingue por su propio espaciado, no necesita una caja extra*/
+    padding: 0; /*el reset le sacó el padding a fieldset, pero lo aclaramos
+    igual por las dudas, ya que el navegador le pone uno por defecto que acá
+    no queremos*/
+}
+
+aside legend {
+    font-family: var(--fuente-titulo); /*tipografía de títulos*/
+    color: var(--color-morado); /*color de marca*/
+    font-size: 0.95rem; /*chico, porque es un subtítulo de filtro, no un
+    título de sección*/
+    font-weight: 600; /*Semibold*/
+    margin-bottom: 0.6rem; /*separa el legend de sus checkboxes/inputs*/
+}
+
+/* Cada label de checkbox (Autor, Género) en su propia línea */
+aside fieldset label {
+    display: flex; /*acomoda el checkbox y su texto en fila*/
+    align-items: center; /*los centra verticalmente entre sí*/
+    gap: 0.5rem; /*separación entre el cuadradito y el texto*/
+    font-family: var(--fuente-cuerpo); /*tipografía de cuerpo del manual*/
+    color: var(--color-texto); /*gris casi negro del sitio*/
+    font-size: 0.9rem; /*tamaño legible sin ser protagonista*/
+    padding: 0.3rem 0; /*espacio vertical entre una opción y la siguiente*/
+}
+
+aside fieldset input[type="checkbox"] {
+    accent-color: var(--color-morado); /*colorea el tilde del checkbox en
+    violeta cuando está marcado, en vez del azul por defecto del navegador*/
+    width: 1rem; /*ancho del cuadradito*/
+    height: 1rem; /*alto del cuadradito, para que sea parejo con el ancho*/
+}
+
+/* Precio: los dos inputs de número, uno arriba del otro */
+aside fieldset label[for] {
+    display: block; /*a diferencia de los labels de checkbox (flex, en
+    fila), estos labels van solos arriba de su input, así que ocupan su
+    propia línea*/
+    margin-bottom: 0.3rem; /*separa el texto del label de su input*/
+}
+
+aside input[type="number"] {
+    width: 100%; /*el input ocupa todo el ancho disponible del aside*/
+    border: 1.5px solid var(--color-borde); /*borde sutil*/
+    border-radius: 8px; /*esquinas redondeadas*/
+    padding: 0.5rem 0.65rem; /*espacio interno*/
+    font-family: var(--fuente-cuerpo); /*tipografía de cuerpo*/
+    font-size: 0.9rem; /*tamaño legible*/
+    color: var(--color-texto); /*color de texto*/
+    background-color: var(--color-fondo); /*fondo blanco*/
+    margin-bottom: 0.75rem; /*separa este input del siguiente label ("Hasta")*/
+}
+
+aside input[type="number"]:focus {
+    outline: none; /*saca el contorno azul por defecto del navegador*/
+    border-color: var(--color-violeta); /*lo reemplaza por un borde violeta*/
+}
+
+/* Botón "Aplicar filtros" (agregalo al form si todavía no está: ver el
+comentario que te dejé arriba en el chat) */
+aside form button[type="submit"] {
+    display: block; /*ocupa toda su propia línea*/
+    width: 100%; /*ancho completo, para que sea fácil de tocar en celular*/
+    background-color: var(--color-violeta); /*fondo violeta, color principal
+    del manual*/
+    color: var(--color-blanco); /*texto blanco, para contraste*/
+    font-family: var(--fuente-titulo); /*tipografía de títulos, para botones*/
+    font-size: 0.9rem; /*tamaño legible*/
+    font-weight: 600; /*Semibold*/
+    padding: 0.7rem; /*espacio interno del botón*/
+    border-radius: var(--radio); /*esquinas redondeadas del manual*/
+    transition: background-color var(--transicion); /*anima el cambio de
+    color al pasar el mouse, en vez de que sea instantáneo*/
+}
+
+aside form button[type="submit"]:hover {
+    background-color: var(--color-acento); /*color de hover ya definido en
+    las variables del sitio para todos los botones violetas*/
+}
+
+/* ── Título "Catálogo" ── */
+/* antes vivía adentro de "#catalogo", a la misma altura que "Filtros" (los
+dos eran el primer ítem de su propia columna del grid de main, así que
+coincidían en la fila por casualidad de la grilla, no porque tuviera
+sentido que un h1 de página y un subtítulo de panel se vean del mismo
+peso). Ahora es hijo directo de "main", y ocupa las 2 columnas de arriba,
+solo, antes de que arranquen los filtros y la grilla */
+main>h1 {
+    /*el "grid-area: titulo" que ya le pusimos arriba es lo que lo posiciona;
+    acá solo faltan sus estilos de texto*/
+    font-family: var(--fuente-titulo); /*tipografía de títulos del manual*/
+    color: var(--color-morado); /*color principal del manual*/
+    font-size: 1.6rem; /*tamaño de título de página*/
+    font-weight: 600; /*Semibold*/
+    text-transform: none; /*style.css lo pone en mayúsculas (uppercase); acá
+    lo dejamos con mayúsculas y minúsculas normales, más acorde al tono del
+    manual*/
+    text-align: left; /*style.css lo centra; en este layout de 2 columnas,
+    alineado a la izquierda se ve más prolijo*/
+    margin-bottom: 1.5rem; /*separación con la fila de filtros + grilla*/
+}
+
+/* apaga la rayita turquesa que style.css le agrega a este h1 con ::after:
+es de la paleta anterior y no forma parte del manual violeta/blanco */
+main>h1::after {
+    display: none;
+}
+
+/* ── Grilla de libros ── */
+#catalogo {
+    display: grid; /*convierte a la section en contenedor grid para acomodar
+    los articles (el h1 ya no vive acá adentro, así que ahora este grid solo
+    tiene que ordenar las tarjetas de libro)*/
+    grid-template-columns: minmax(0, 1fr); /*1 sola columna en mobile*/
+    gap: 1.5rem; /*separación entre tarjetas de libro*/
+}
+
+/* ── Cada libro (article) ── */
+#catalogo article {
+    display: flex; /*acomoda la imagen, el título, el autor, el precio, la
+    descripción y el form en columna*/
+    flex-direction: column; /*uno debajo del otro*/
+    background-color: var(--color-fondo); /*fondo blanco de la tarjeta*/
+    border: 1.5px solid var(--color-borde); /*borde sutil*/
+    border-radius: var(--radio); /*esquinas redondeadas del manual*/
+    padding: 1.25rem; /*espacio interno*/
+    box-shadow: 0 2px 12px rgba(92, 6, 140, .08); /*sombra suave violeta*/
+    transition: transform var(--transicion); /*anima el desplazamiento del
+    hover de abajo, en vez de que sea instantáneo*/
+}
+
+#catalogo article:hover {
+    transform: translateY(-4px); /*al pasar el mouse, la tarjeta se levanta
+    4px. No empuja a las tarjetas vecinas, porque transform es solo visual*/
+}
+
+#catalogo article>a {
+    display: block; /*el <a> que envuelve la portada ocupa su propia línea y
+    acepta ancho/alto, en vez de fluir como texto (su comportamiento inline
+    por defecto)*/
+    margin-bottom: 1rem; /*separa la portada del título de abajo*/
+    border-radius: 8px; /*esquinas redondeadas de la portada*/
+    overflow: hidden; /*recorta la imagen si sobra, siguiendo la esquina
+    redondeada de arriba*/
+}
+
+#catalogo article img {
+    width: 100%; /*la imagen ocupa todo el ancho de la tarjeta (esto pisa el
+    width="150" fijo que tiene en el HTML)*/
+    height: 220px; /*alto fijo, para que todas las portadas midan lo mismo
+    sin importar la proporción real de cada una*/
+    object-fit: cover; /*recorta la imagen para llenar el espacio sin
+    deformarla (en vez de estirarla)*/
+    transition: transform var(--transicion); /*anima el zoom leve del hover
+    de abajo*/
+}
+
+#catalogo article:hover img {
+    transform: scale(1.04); /*agranda la imagen un 4% al pasar el mouse
+    sobre la tarjeta, dando sensación de "zoom" sutil*/
+}
+
+#catalogo article h2 {
+    font-family: var(--fuente-titulo); /*tipografía de títulos*/
+    color: var(--color-morado); /*color de marca, para el título del libro*/
+    font-size: 1.05rem; /*tamaño legible sin competir con el h1 de la página*/
+    font-weight: 600; /*Semibold*/
+    line-height: 1.3; /*interlineado más ajustado que el del body (1.6),
+    porque estos títulos pueden ocupar 2 líneas*/
+    margin-bottom: 0.35rem; /*separa el título del autor de abajo*/
+}
+
+/* el autor: primer <p> del article */
+#catalogo article p:nth-of-type(1) {
+    color: var(--color-texto); /*gris casi negro del sitio*/
+    font-size: 0.85rem; /*chico, porque es un dato secundario*/
+    font-weight: 500; /*un poco más marcado que el texto normal*/
+    margin-bottom: 0.5rem; /*separa el autor del precio de abajo*/
+}
+
+/* el precio: segundo <p> del article */
+#catalogo article p:nth-of-type(2) {
+    color: var(--color-morado); /*color de marca, para que el precio
+    resalte sobre el resto del texto de la tarjeta*/
+    font-size: 1.05rem; /*más grande que el texto normal*/
+    font-weight: 700; /*Bold, para que se note a simple vista*/
+    margin-bottom: 0.5rem; /*separa el precio de la descripción de abajo*/
+}
+
+#catalogo article p:nth-of-type(2) strong {
+    color: var(--color-texto); /*la palabra "Precio:" en gris, para que el
+    monto (heredado en violeta) sea lo que más se destaque*/
+    font-weight: 500; /*menos pesada que el monto, para reforzar que es
+    solo la etiqueta*/
+}
+
+/* la descripción: tercer <p> del article */
+#catalogo article p:nth-of-type(3) {
+    color: var(--color-texto); /*gris de texto*/
+    font-size: 0.85rem; /*chico*/
+    opacity: 0.8; /*un poco más tenue que el resto, porque es información
+    complementaria, no esencial*/
+    line-height: 1.5; /*interlineado cómodo para un texto de 2-3 líneas*/
+    margin-bottom: 1rem; /*separa la descripción del botón de abajo*/
+    flex-grow: 1; /*hace que este párrafo "empuje" el form hacia abajo,
+    para que el botón quede siempre pegado al fondo de la tarjeta, aunque
+    las descripciones midan distinto entre un libro y otro*/
+}
+
+/* ── Botón "Añadir al carrito" ── */
+#catalogo article form button[type="submit"],
+#catalogo article>a:last-child {
+    /* esta 2ª parte del selector alcanza al 4to libro, que todavía usa un
+    <a> en vez de un form (ver el aviso al principio del chat) */
+    display: block; /*ocupa toda su propia línea*/
+    width: 100%; /*ancho completo de la tarjeta*/
+    text-align: center; /*centra el texto del botón*/
+    background-color: var(--color-violeta); /*fondo violeta, color principal
+    del manual*/
+    color: var(--color-blanco); /*texto blanco, para contraste*/
+    font-family: var(--fuente-titulo); /*tipografía de títulos, para botones*/
+    font-size: 0.85rem; /*tamaño legible sin ser demasiado grande*/
+    font-weight: 600; /*Semibold*/
+    padding: 0.65rem; /*espacio interno del botón*/
+    border-radius: var(--radio); /*esquinas redondeadas del manual*/
+    transition: background-color var(--transicion); /*anima el cambio de
+    color en el hover*/
+}
+
+#catalogo article form button[type="submit"]:hover,
+#catalogo article>a:last-child:hover {
+    background-color: var(--color-acento); /*color de hover ya definido en
+    las variables del sitio para todos los botones violetas*/
+}
+
+/* ── Tablet: 2 columnas de libros ── */
+@media (min-width: 600px) {
+    #catalogo {
+        grid-template-columns: repeat(2, 1fr); /*2 columnas iguales, que
+        entre las 2 siempre suman el 100% del ancho disponible*/
+    }
+}
+
+/* ── Desktop: filtros a la izquierda + 3 columnas de libros ── */
+@media (min-width: 1000px) {
+    main {
+        grid-template-columns: 16rem minmax(0, 1fr); /*columna 1: ancho fijo
+        para los filtros (16rem ≈ 256px, ancho típico de una barra lateral).
+        columna 2: el resto del espacio, para la grilla de libros*/
+        /*el mapa cambia de 3 filas de 1 columna a 2 filas: la primera con
+        "titulo" repetido en las 2 columnas (para que siga ocupando todo el
+        ancho, arriba de todo), y la segunda con "filtros" a la izquierda y
+        "catalogo" a la derecha*/
+        grid-template-areas:
+            "titulo titulo"
+            "filtros catalogo";
+        align-items: start; /*evita que el aside (más corto) se estire para
+        igualar el alto de la grilla de libros (más alta)*/
+    }
+
+    #catalogo {
+        grid-template-columns: repeat(3, 1fr); /*3 columnas iguales dentro
+        del espacio que le tocó a #catalogo en la grilla de main*/
+    }
+}

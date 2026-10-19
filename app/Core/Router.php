@@ -4,43 +4,48 @@ declare(strict_types=1);
 namespace App\Core;
 
 /**
- * Mapea método HTTP + URL a un controlador y acción.
- * Soporta segmentos dinámicos: /catalogo/{slug}
+ * Mapea (método HTTP + URL) a un controlador y acción.
+ * Solo resuelve la ruta: quien la ejecuta es App.
  */
 final class Router
 {
-    /** @var array<int, array{0: string, 1: string, 2: array}> */
+    /** @var array<string, array<string, array{0: class-string, 1: string}>> */
     private array $routes = [];
 
     /**
-     * Registra una ruta.
-     *
-     * @param string $method  Método HTTP (GET, POST...)
-     * @param string $pattern URL, con segmentos {nombre} opcionales
-     * @param array  $handler [Controlador::class, 'acción']
+     * @param string $pattern URL con segmentos dinámicos opcionales, ej. '/catalogo/{slug}'.
+     * @param array  $handler [Controlador::class, 'acción'].
      */
     public function add(string $method, string $pattern, array $handler): void
     {
-        // Convierte {slug} en un grupo con nombre: (?P<slug>[^/]+)
-        $regex = '#^' . preg_replace('#\{(\w+)\}#', '(?P<$1>[^/]+)', $pattern) . '$#';
-        $this->routes[] = [strtoupper($method), $regex, $handler];
+        $this->routes[strtoupper($method)][$pattern] = $handler;
     }
 
     /**
-     * Busca la ruta que coincide con la petición.
-     *
-     * @return array{0: array, 1: array}|null  [handler, parámetros] o null si no hay coincidencia
+     * Devuelve [handler, params] de la ruta que coincide, o null si ninguna coincide.
+     * params es un array asociativo: ['slug' => 'rayuela'].
      */
     public function dispatch(Request $request): ?array
     {
-        foreach ($this->routes as [$method, $regex, $handler]) {
-            if ($method === $request->method && preg_match($regex, $request->path, $matches)) {
-                // Se conservan solo los grupos con nombre (los parámetros de la ruta).
+        foreach ($this->routes[$request->method] ?? [] as $pattern => $handler) {
+            if (preg_match($this->toRegex($pattern), $request->path, $matches)) {
+                // Se quedan solo las capturas con nombre (descarta las numéricas).
                 $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
                 return [$handler, $params];
             }
         }
 
         return null;
+    }
+
+    /**
+     * '/catalogo/{slug}' -> '#^/catalogo/(?P<slug>[A-Za-z0-9_-]+)$#'
+     * Las rutas fijas se comparan antes porque se registran antes en routes.php.
+     */
+    private function toRegex(string $pattern): string
+    {
+        // preg_quote escapa la parte fija (ej. el '.' de 'export.csv'); deja '{slug}' como '\{slug\}'.
+        $regex = preg_replace('/\\\\\{(\w+)\\\\\}/', '(?P<$1>[A-Za-z0-9_-]+)', preg_quote($pattern, '#'));
+        return '#^' . $regex . '$#';
     }
 }
