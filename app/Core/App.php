@@ -26,10 +26,24 @@ final class App
 
         // 2) Análisis de la petición HTTP (método, ruta, query, body, cabeceras).
         $request = Request::fromGlobals();
-        $cors = new Cors(Config::get('cors.allowed_origins', []));
+        $allowedOrigins = Config::get('cors.allowed_origins', []);
+        $cors = new Cors($allowedOrigins);
+        $csrf = new CsrfGuard($allowedOrigins);
 
         try {
-            $response = $cors->isPreflight($request) ? Response::empty() : $this->handle($request);
+            // Preflight de CORS: se responde sin ejecutar nada.
+            // Después, CsrfGuard frena las peticiones que modifican datos desde otros sitios.
+            $response = $cors->isPreflight($request)
+                ? Response::empty()
+                : ($csrf->check($request) ?? $this->handle($request));
+        } catch (HttpException $e) {
+            // Error esperado (ej. 401 sin sesión): su mensaje está pensado para el usuario.
+            $response = Response::error($e->getMessage(), $e->status);
+            if ($e->status === 401 && AuthCookie::read($request) !== null) {
+                // Había una cookie pero no sirve (vencida, alterada, usuario borrado):
+                // se borra para que el navegador no la siga enviando.
+                $response = AuthCookie::clear($response);
+            }
         } catch (Throwable $e) {
             // Cualquier error no previsto: se registra y se responde 500 sin detalles internos.
             $response = $errors->handle($e);
