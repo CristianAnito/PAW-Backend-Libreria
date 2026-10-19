@@ -7,7 +7,10 @@ use App\Core\{Request, Response};
 use App\Services\Cart;
 
 /**
- * Carrito de compras (guardado en la sesión del visitante).
+ * Carrito de compras. Solo para usuarios con la sesión iniciada: cada acción empieza
+ * con requireAuth(), que responde 401 si no hay sesión (el frontend lleva al login).
+ * Cada usuario tiene su propio carrito.
+ *
  * Todas las acciones responden con el carrito actualizado, así el frontend
  * lo vuelve a mostrar sin hacer otra petición.
  */
@@ -18,7 +21,8 @@ final class CartController extends Controller
      */
     public function index(Request $request): Response
     {
-        return Response::json(['data' => $this->cart()->toArray()]);
+        $cart = $this->cart($this->requireAuth($request));
+        return Response::json(['data' => $cart->toArray()]);
     }
 
     /**
@@ -27,6 +31,8 @@ final class CartController extends Controller
      */
     public function add(Request $request): Response
     {
+        $cart = $this->cart($this->requireAuth($request));
+
         $slug = $request->input('libro');
         if (!$this->exists($slug)) {
             return $this->notFound('El libro solicitado no existe.');
@@ -37,8 +43,8 @@ final class CartController extends Controller
             return $this->quantityError();
         }
 
-        $this->cart()->add($slug, $quantity);
-        return $this->index($request);
+        $cart->add($slug, $quantity);
+        return Response::json(['data' => $cart->toArray()]);
     }
 
     /**
@@ -47,7 +53,9 @@ final class CartController extends Controller
      */
     public function update(Request $request, string $slug): Response
     {
-        if (!$this->cart()->has($slug)) {
+        $cart = $this->cart($this->requireAuth($request));
+
+        if (!$cart->has($slug)) {
             return $this->notFound('El libro no está en el carrito.');
         }
 
@@ -56,8 +64,8 @@ final class CartController extends Controller
             return $this->quantityError();
         }
 
-        $this->cart()->update($slug, $quantity);
-        return $this->index($request);
+        $cart->update($slug, $quantity);
+        return Response::json(['data' => $cart->toArray()]);
     }
 
     /**
@@ -65,12 +73,14 @@ final class CartController extends Controller
      */
     public function remove(Request $request, string $slug): Response
     {
-        if (!$this->cart()->has($slug)) {
+        $cart = $this->cart($this->requireAuth($request));
+
+        if (!$cart->has($slug)) {
             return $this->notFound('El libro no está en el carrito.');
         }
 
-        $this->cart()->remove($slug);
-        return $this->index($request);
+        $cart->remove($slug);
+        return Response::json(['data' => $cart->toArray()]);
     }
 
     // true si $slug es un texto que corresponde a un libro del catálogo.

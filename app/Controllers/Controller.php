@@ -83,9 +83,9 @@ abstract class Controller
             ?? throw new HttpException(401, 'Necesitás iniciar sesión.');
     }
 
-    // Carrito del visitante (guardado en la sesión).
-    protected function cart(): Cart
+    // Carrito del usuario (guardado en la sesión de PHP, uno por usuario).
+    protected function cart(User $user): Cart
     {
-        return new Cart($this->books());
+        return new Cart($this->books(), $user->id);
     }
 }

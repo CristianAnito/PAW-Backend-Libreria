@@ -7,23 +7,36 @@ use App\Core\Session;
 use App\Repositories\BookRepositoryInterface;
 
 /**
- * Carrito de compras guardado en la sesión como [slug => cantidad].
+ * Carrito de compras de un usuario, guardado en la sesión de PHP como [slug => cantidad].
  * Solo se guardan slugs y cantidades: título y precio se leen siempre del catálogo,
- * así el visitante no puede alterar el precio.
+ * así el usuario no puede alterar el precio.
+ *
+ * Cada usuario tiene su propio carrito dentro de la sesión ("cart.{id}"): si en el mismo
+ * navegador alguien cierra sesión y entra otra persona, no ve el carrito del anterior.
+ * (Con la base de datos de la próxima entrega, el carrito puede pasar a una tabla y
+ * conservarse entre dispositivos.)
  */
 final class Cart
 {
     public const MAX_QUANTITY = 10;   // máximo de ejemplares por libro
-    private const KEY = 'cart';
 
-    public function __construct(private BookRepositoryInterface $books) {}
+    public function __construct(
+        private BookRepositoryInterface $books,
+        private int $userId,
+    ) {}
+
+    // Clave de la sesión donde se guarda el carrito de este usuario.
+    private function key(): string
+    {
+        return 'cart.' . $this->userId;
+    }
 
     // Suma ejemplares de un libro (sin pasar del máximo).
     public function add(string $slug, int $quantity = 1): void
     {
         $items = $this->raw();
         $items[$slug] = min(self::MAX_QUANTITY, ($items[$slug] ?? 0) + $quantity);
-        Session::set(self::KEY, $items);
+        Session::set($this->key(), $items);
     }
 
     // Reemplaza la cantidad de un libro que ya está en el carrito.
@@ -32,7 +45,7 @@ final class Cart
         $items = $this->raw();
         if (isset($items[$slug])) {
             $items[$slug] = $quantity;
-            Session::set(self::KEY, $items);
+            Session::set($this->key(), $items);
         }
     }
 
@@ -40,12 +53,12 @@ final class Cart
     {
         $items = $this->raw();
         unset($items[$slug]);
-        Session::set(self::KEY, $items);
+        Session::set($this->key(), $items);
     }
 
     public function clear(): void
     {
-        Session::forget(self::KEY);
+        Session::forget($this->key());
     }
 
     /**
@@ -109,6 +122,6 @@ final class Cart
 
     private function raw(): array
     {
-        return Session::get(self::KEY, []);
+        return Session::get($this->key(), []);
     }
 }

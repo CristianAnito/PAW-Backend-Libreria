@@ -28,7 +28,7 @@ Cuando un usuario se registra o inicia sesión, la API le entrega un **JWT** (un
 | `app/Core/CsrfGuard.php` | No toca la cookie, pero impide que otro sitio la aproveche (ver `docs/seguridad-csrf.md`). |
 | `app/Controllers/AuthController.php` | Usa todo lo anterior: registro, inicio y cierre de sesión, usuario actual. |
 
-> `app/Core/Session.php` maneja **otra** cookie, `PHPSESSID`: la sesión de PHP donde vive el carrito. Son independientes: el carrito funciona sin iniciar sesión.
+> `app/Core/Session.php` maneja **otra** cookie, `PHPSESSID`: la sesión de PHP donde vive el carrito (uno por usuario). Para usar el carrito hacen falta las dos: `auth_token` dice quién es el usuario y `PHPSESSID` dónde está guardado su carrito.
 
 ## Archivos del frontend
 
