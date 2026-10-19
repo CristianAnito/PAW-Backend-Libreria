@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Core\{Config, Request, Response, View};
+use App\Core\{Config, Request, Response, Session, View};
 use App\Repositories\{BookRepositoryInterface, JsonBookRepository};
 use App\Services\Cart;
 
@@ -45,6 +45,16 @@ abstract class Controller
     protected function books(): BookRepositoryInterface
     {
         return $this->books ??= new JsonBookRepository(Config::get('catalog.books_file'));
+    }
+
+    /**
+     * ¿Hay un usuario con sesión iniciada?
+     * Contrato para el inicio de sesión (todavía no implementado): al ingresar,
+     * guardar los datos del usuario con Session::set('user', [...]); al salir, Session::forget('user').
+     */
+    protected function isLoggedIn(): bool
+    {
+        return Session::get('user') !== null;
     }
 
     // Carrito del visitante (guardado en la sesión).

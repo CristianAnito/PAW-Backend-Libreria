@@ -34,6 +34,12 @@ final class CartController extends Controller
      */
     public function add(Request $request): Response
     {
+        // Solo usuarios con sesión iniciada pueden agregar al carrito.
+        // /iniciar-sesion todavía no existe (da 404) hasta que se implementen login y registro.
+        if (!$this->isLoggedIn()) {
+            return Response::redirect('/iniciar-sesion', 303);
+        }
+
         $slug = $this->bookSlug($request);
         if ($slug === null) {
             return $this->notFound();
