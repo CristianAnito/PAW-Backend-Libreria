@@ -16,18 +16,16 @@ return [
     ['GET',    '/api/libros/export.csv',   [CatalogController::class,  'exportCsv']],
     ['GET',    '/api/libros/{slug}',       [CatalogController::class,  'show']],
 
+    // Carrito y compra: requieren la sesión iniciada (401 si no hay). Un carrito por usuario.
     ['GET',    '/api/carrito',             [CartController::class,     'index']],
     ['POST',   '/api/carrito/items',       [CartController::class,     'add']],
     ['PATCH',  '/api/carrito/items/{slug}', [CartController::class,    'update']],
     ['DELETE', '/api/carrito/items/{slug}', [CartController::class,    'remove']],
+    ['POST',   '/api/compra',              [CheckoutController::class, 'submit']],
 
     // Usuarios: la sesión es un JWT en la cookie HttpOnly "auth_token" (docs/cookie-de-sesion.md).
     ['POST',   '/api/auth/registro',       [AuthController::class,     'register']],
     ['POST',   '/api/auth/login',          [AuthController::class,     'login']],
     ['POST',   '/api/auth/logout',         [AuthController::class,     'logout']],
     ['GET',    '/api/auth/yo',             [AuthController::class,     'me']],
-
-    // Compra desactivada por ahora (falta definir la sesión de usuario). Para activarla,
-    // descomentar esta ruta y reactivar el botón en la vista de compra del frontend.
-    // ['POST', '/api/compra',             [CheckoutController::class, 'submit']],
 ];

@@ -34,7 +34,7 @@ El flujo es: `Request` → `Router` → `Controller` → `Repository/Model` → 
 | Carpeta | Contenido |
 |---|---|
 | `public/` | Único directorio expuesto: front controller y `.htaccess` |
-| `app/Core/` | Infraestructura: Request, Response, Router, Cors, CsrfGuard, Config, Logger, ErrorHandler, Validator, Mailer, Session, View |
+| `app/Core/` | Infraestructura: Request, Response, Router, Cors, CsrfGuard, Config, Logger, ErrorHandler, Validator, Mailer (+ `Mail/`: transportes log, smtp y brevo), Session, View |
 | `app/Controllers/` | Reciben la petición, coordinan el modelo y devuelven JSON |
 | `app/Models/` | Entidades (Book, Order) |
 | `app/Repositories/` | Acceso a datos detrás de una interfaz |
@@ -56,7 +56,7 @@ El flujo es: `Request` → `Router` → `Controller` → `Repository/Model` → 
 | Configuración | `Core/Config` + `config/*.php` + `.env` | |
 | Representaciones de la información | JSON: `Response::json`. CSV: `Services/CsvExporter`. Texto (mail): `Core/View` | |
 | Validación de entrada | `Core/Validator` | |
-| Envío de correo | `Core/Mailer` (PHPMailer) | |
+| Envío de correo | `Core/Mailer` + `Core/Mail/*Transport` (log, SMTP con PHPMailer, API HTTP de Brevo) | Strategy |
 | Manejo de errores | `Core/ErrorHandler` (JSON genérico) | |
 | Carga de clases | Composer | PSR-4 |
 
@@ -75,7 +75,9 @@ El flujo es: `Request` → `Router` → `Controller` → `Repository/Model` → 
 | POST | `/api/auth/login` `{username (o email), contrasenia}` | `AuthController@login` | `{data: usuario}` + cookie de sesión; 401 si no coincide |
 | POST | `/api/auth/logout` | `AuthController@logout` | 204, borra la cookie |
 | GET | `/api/auth/yo` | `AuthController@me` | `{data: usuario}`; 401 sin sesión |
-| POST | `/api/compra` `{nombre, apellido, documento, email, telefono}` | `CheckoutController@submit` | 201 (desactivada por ahora) |
+| POST | `/api/compra` `{nombre, apellido, documento, email, telefono}` | `CheckoutController@submit` | 201 y mail al personal · 409 carrito vacío · 503 mail no enviado |
+
+Carrito y compra **requieren la sesión iniciada** (401 sin sesión).
 
 `carrito = {items: [{book, quantity, subtotal}], total, count, max_quantity}`
 
@@ -91,18 +93,18 @@ El flujo es: `Request` → `Router` → `Controller` → `Repository/Model` → 
 - **Paginación:** `per_page` configurable en `config/catalog.php`.
 - **Libro o página inexistente:** HTTP 404 con mensaje JSON; el frontend muestra su vista 404.
 - **Exportación CSV:** mismos parámetros que el listado; cabeceras `text/csv` y `Content-Disposition: attachment`.
-- **Carrito:** se guarda en la sesión de PHP (cookie `HttpOnly`, `SameSite=Lax`). El frontend envía la cookie con `credentials: 'include'`.
+- **Carrito:** solo con la sesión iniciada; uno por usuario, guardado en la sesión de PHP bajo `cart.{id}` (cookie `PHPSESSID`, `HttpOnly`, `SameSite=Lax`). Así, si en el mismo navegador entra otro usuario, no ve el carrito anterior. Con la base de datos podrá pasar a una tabla.
 - **CORS:** solo se autorizan los orígenes de `CORS_ORIGINS` (nunca `*`, porque se envían cookies). El frontend y la API deben estar en el mismo *sitio* (ej. ambos en `localhost`, distinto puerto) para que la cookie viaje.
 - **CSRF:** las peticiones que modifican datos (POST, PATCH, DELETE) pasan por `Core/CsrfGuard`: se rechazan con 403 si la cabecera `Origin` no está en `CORS_ORIGINS` y con 415 si un POST/PATCH no es JSON (un formulario de otro sitio no puede enviar JSON sin pasar por el preflight de CORS). Se suma a las cookies `SameSite=Lax`. Los GET nunca modifican datos. Explicación completa en [docs/seguridad-csrf.md](docs/seguridad-csrf.md).
-- **Despliegue (previsto):** front en Vercel, API en Render, base de datos en Aiven. Vercel reenvía `/api/*` a Render (`vercel.json` del frontend), así el navegador ve un solo dominio y las cookies no son "de terceros". `CORS_ORIGINS` debe incluir el dominio de Vercel. En Render, **`APP_ENV=production`** (obligatorio: con `development` la API agrega el detalle de los errores, con rutas de archivos, en sus respuestas), un `JWT_SECRET` nuevo y `MAIL_DRIVER=smtp`.
+- **Despliegue (previsto):** front en Vercel, API en Render, base de datos en Aiven. Vercel reenvía `/api/*` a Render (`vercel.json` del frontend), así el navegador ve un solo dominio y las cookies no son "de terceros". `CORS_ORIGINS` debe incluir el dominio de Vercel. En Render, **`APP_ENV=production`** (obligatorio: con `development` la API agrega el detalle de los errores, con rutas de archivos, en sus respuestas), un `JWT_SECRET` nuevo, `MAIL_DRIVER=brevo` y `BREVO_API_KEY`.
 - **Validación:** las reglas del backend (`Models/Order`) se repiten en el frontend (`js/validaciones.js`) para los atributos HTML; el backend siempre valida de nuevo.
-- **Correo:** destinatario configurable mediante `MAIL_TO` en `.env`.
+- **Correo:** al finalizar la compra se envía un mail al personal (`MAIL_TO`, configurable). Remitente: `MAIL_FROM`, una dirección del sitio verificada en el proveedor; el email del cliente va en `Reply-To` (nunca como remitente: sería falsificarlo y se rechazaría por SPF/DKIM/DMARC). `MAIL_DRIVER`: `log` (desarrollo), `smtp` (local) o `brevo` (producción: Render gratis bloquea los puertos SMTP, la API de Brevo usa HTTPS). Si el envío falla, 503 y el carrito no se vacía. Ver [docs/envio-de-mail.md](docs/envio-de-mail.md).
 - **Errores:** en `production` se responde un mensaje genérico y el detalle se registra en `storage/logs`; en `development` se agrega el detalle en `error.debug`. Los mensajes que sí ve el usuario (`HttpException`, validaciones, login) nunca incluyen datos internos; el login responde igual (mensaje y tiempo) exista o no el usuario. No se envía `X-Powered-By` (versión de PHP) y los stack traces del log no incluyen argumentos (contraseñas).
 - **Persistencia:** `BookRepositoryInterface` aísla el origen de datos (`books.json` ahora, base de datos en el TP siguiente).
 
 ## Configuración
 
-Variables en `.env` (ver `.env.example`): `APP_ENV`, `APP_URL`, `CORS_ORIGINS`, `JWT_SECRET`, `JWT_TTL`, `MAIL_DRIVER`, `MAIL_TO`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS`.
+Variables en `.env` (ver `.env.example`): `APP_ENV`, `APP_URL`, `CORS_ORIGINS`, `JWT_SECRET`, `JWT_TTL`, `MAIL_DRIVER`, `MAIL_TO`, `MAIL_FROM`, `BREVO_API_KEY`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS`.
 
 ## Flujo de trabajo del equipo
 
