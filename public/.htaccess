@@ -2,11 +2,9 @@
     Options -MultiViews
     RewriteEngine On
 
-    # Redirect Trailing Slashes If Not A Folder...
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^(.*)/$ /$1 [L,R=301]
-
-    # Handle Front Controller...
+    # Front controller: toda petición que no sea un archivo real de public/ va a index.php.
+    # (No se redirige "/ruta/" a "/ruta": Request ya ignora la barra final, y una redirección
+    # detrás del proxy de Render armaría la URL con http y el puerto interno.)
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^ index.php [L]

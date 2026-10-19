@@ -1,0 +1,5 @@
+# Archivos que se usan dentro del contenedor (Linux): siempre con finales de línea LF,
+# aunque se trabaje en Windows (con CRLF, Apache podría leer mal "Listen ${PORT}").
+Dockerfile      text eol=lf
+docker/**       text eol=lf
+public/.htaccess text eol=lf

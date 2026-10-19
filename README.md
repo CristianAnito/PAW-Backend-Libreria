@@ -104,7 +104,34 @@ Carrito y compra **requieren la sesión iniciada** (401 sin sesión).
 
 ## Configuración
 
-Variables en `.env` (ver `.env.example`): `APP_ENV`, `APP_URL`, `CORS_ORIGINS`, `JWT_SECRET`, `JWT_TTL`, `MAIL_DRIVER`, `MAIL_TO`, `MAIL_FROM`, `BREVO_API_KEY`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS`.
+Variables en `.env` (ver `.env.example`): `APP_ENV`, `APP_URL`, `LOG_FILE`, `CORS_ORIGINS`, `JWT_SECRET`, `JWT_TTL`, `MAIL_DRIVER`, `MAIL_TO`, `MAIL_FROM`, `BREVO_API_KEY`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS`.
+
+## Despliegue (Docker / Render)
+
+La API se publica como contenedor (`Dockerfile`): PHP 8.4 + Apache, con solo `public/` expuesto, configuración de PHP de producción y Apache sin revelar su versión. El puerto lo indica la variable `PORT` (Render la define).
+
+Probar la imagen en local:
+
+```bash
+docker build -t pawprints-api .
+docker run --rm -p 8090:80 --env-file .env -e APP_ENV=production -e LOG_FILE=php://stderr pawprints-api
+# http://localhost:8090/api/libros
+```
+
+En Render: *New → Web Service*, repositorio del backend, rama `main`, runtime **Docker**, plan Free. Variables de entorno:
+
+| Variable | Valor |
+|---|---|
+| `APP_ENV` | `production` (obligatorio: con `development` se muestra el detalle de los errores) |
+| `APP_URL` | URL del servicio en Render (ej. `https://pawprints-api.onrender.com`) |
+| `LOG_FILE` | `php://stderr` (los registros aparecen en la pestaña *Logs*) |
+| `CORS_ORIGINS` | URL del frontend en Vercel (ej. `https://pawprints.vercel.app`) |
+| `JWT_SECRET` | Uno **nuevo** (`php -r "echo bin2hex(random_bytes(32));"`), distinto del de desarrollo |
+| `JWT_TTL` | `3600` |
+| `MAIL_DRIVER` | `brevo` |
+| `BREVO_API_KEY`, `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_TO` | Ver [docs/envio-de-mail.md](docs/envio-de-mail.md) |
+
+Limitaciones del plan gratis: el servicio se duerme tras 15 minutos sin uso (la primera petición tarda 30-60 s) y el disco se borra en cada reinicio o deploy (`users.json`, sesiones y carritos), hasta que se use la base de datos.
 
 ## Flujo de trabajo del equipo
 
