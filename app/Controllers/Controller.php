@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\{Config, Response};
-use App\Repositories\{BookRepositoryInterface, JsonBookRepository};
+use App\Repositories\{BookRepositoryInterface, JsonBookRepository, JsonUserRepository, UserRepositoryInterface};
 use App\Services\Cart;
 
 /**
@@ -14,6 +14,7 @@ use App\Services\Cart;
 abstract class Controller
 {
     private ?BookRepositoryInterface $books = null;
+    private ?UserRepositoryInterface $users = null;
 
     /**
      * Respuesta 404 (libro o página inexistente).
@@ -37,6 +38,12 @@ abstract class Controller
     protected function books(): BookRepositoryInterface
     {
         return $this->books ??= new JsonBookRepository(Config::get('catalog.books_file'));
+    }
+
+    // Acceso a los usuarios (hoy desde el JSON; se crea una sola vez por petición).
+    protected function users(): UserRepositoryInterface
+    {
+        return $this->users ??= new JsonUserRepository(Config::get('auth.users_file'));
     }
 
     // Carrito del visitante (guardado en la sesión).
