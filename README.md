@@ -71,12 +71,18 @@ El flujo es: `Request` → `Router` → `Controller` → `Repository/Model` → 
 | POST | `/api/carrito/items` `{libro, cantidad?}` | `CartController@add` | `{data: carrito}` |
 | PATCH | `/api/carrito/items/{slug}` `{cantidad}` | `CartController@update` | `{data: carrito}` |
 | DELETE | `/api/carrito/items/{slug}` | `CartController@remove` | `{data: carrito}` |
+| POST | `/api/auth/registro` `{username, email, telefono?, contrasenia, confirmar_contrasenia}` | `AuthController@register` | 201 `{data: usuario}` + cookie de sesión |
+| POST | `/api/auth/login` `{username (o email), contrasenia}` | `AuthController@login` | `{data: usuario}` + cookie de sesión; 401 si no coincide |
+| POST | `/api/auth/logout` | `AuthController@logout` | 204, borra la cookie |
+| GET | `/api/auth/yo` | `AuthController@me` | `{data: usuario}`; 401 sin sesión |
 | POST | `/api/compra` `{nombre, apellido, documento, email, telefono}` | `CheckoutController@submit` | 201 (desactivada por ahora) |
 
 `carrito = {items: [{book, quantity, subtotal}], total, count, max_quantity}`
 
+`usuario = {id, username, email, phone}` (nunca incluye la contraseña ni su hash). La sesión es un JWT en la cookie `HttpOnly` `auth_token`: ver [docs/cookie-de-sesion.md](docs/cookie-de-sesion.md).
+
 **Errores:** `{"error": {"message": "...", "fields": {"campo": "mensaje"}}}` con el código HTTP correspondiente
-(404 recurso inexistente, 409 carrito vacío, 422 datos inválidos con `fields`, 500 error interno, 503 mail no enviado).
+(401 sin sesión o login incorrecto, 403 origen no permitido, 404 recurso inexistente, 409 carrito vacío, 415 cuerpo que no es JSON, 422 datos inválidos con `fields`, 500 error interno, 503 mail no enviado).
 
 ## Decisiones de diseño
 

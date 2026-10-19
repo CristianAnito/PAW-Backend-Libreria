@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use App\Controllers\{CatalogController, CartController, CheckoutController};
+use App\Controllers\{AuthController, CatalogController, CartController, CheckoutController};
 
 /**
  * Rutas de la API. Todas responden JSON (salvo la exportación CSV).
@@ -20,6 +20,12 @@ return [
     ['POST',   '/api/carrito/items',       [CartController::class,     'add']],
     ['PATCH',  '/api/carrito/items/{slug}', [CartController::class,    'update']],
     ['DELETE', '/api/carrito/items/{slug}', [CartController::class,    'remove']],
+
+    // Usuarios: la sesión es un JWT en la cookie HttpOnly "auth_token" (docs/cookie-de-sesion.md).
+    ['POST',   '/api/auth/registro',       [AuthController::class,     'register']],
+    ['POST',   '/api/auth/login',          [AuthController::class,     'login']],
+    ['POST',   '/api/auth/logout',         [AuthController::class,     'logout']],
+    ['GET',    '/api/auth/yo',             [AuthController::class,     'me']],
 
     // Compra desactivada por ahora (falta definir la sesión de usuario). Para activarla,
     // descomentar esta ruta y reactivar el botón en la vista de compra del frontend.
