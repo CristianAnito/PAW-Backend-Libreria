@@ -75,7 +75,11 @@ $error = static fn (string $field): string => isset($errors[$field])
         <p>El pago se realiza con <strong><?= e(O::PAYMENT_METHOD) ?></strong>.</p>
     </fieldset>
 
-    <button type="submit">Finalizar compra</button>
+    <!-- Compra desactivada por ahora: el botón no envía el formulario.
+         Para activarla: volver a type="submit", quitar "disabled" y descomentar
+         las rutas POST /compra y GET /compra/confirmada en config/routes.php. -->
+    <button type="button" disabled aria-describedby="compra-no-disponible">Finalizar compra</button>
+    <p id="compra-no-disponible">La compra online estará disponible próximamente.</p>
 </form>
 
 <aside>

@@ -22,6 +22,8 @@ return [
     ['POST', '/carrito/eliminar',    [CartController::class,     'remove']],
 
     ['GET',  '/compra',              [CheckoutController::class, 'form']],
-    ['POST', '/compra',              [CheckoutController::class, 'submit']],
-    ['GET',  '/compra/confirmada',   [CheckoutController::class, 'confirmed']],
+    // Compra desactivada por ahora (falta definir el envío del mail). Para activarla,
+    // descomentar estas dos rutas y reactivar el botón en app/Views/checkout/form.php.
+    // ['POST', '/compra',            [CheckoutController::class, 'submit']],
+    // ['GET',  '/compra/confirmada', [CheckoutController::class, 'confirmed']],
 ];
