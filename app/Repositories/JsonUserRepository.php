@@ -9,11 +9,19 @@ use RuntimeException;
 /**
  * Usuarios guardados en un archivo JSON (storage/data/users.json).
  *
- * A diferencia de los libros, este archivo se escribe. Si dos peticiones lo escribieran a la vez,
- * una podría pisar los cambios de la otra; por eso se usa flock() (bloqueo de archivo):
- * - lectura: bloqueo compartido (varios pueden leer a la vez);
- * - escritura: bloqueo exclusivo (nadie más lee ni escribe hasta terminar).
- * Una base de datos resuelve esto sola; es una de las razones para migrar a una.
+ * A diferencia de los libros, este archivo se escribe, y cada petición HTTP es un proceso aparte.
+ * Guardar un usuario es "leer el archivo -> agregar al array -> escribir el archivo entero".
+ * Si dos registros ocurren a la vez, los dos leen la misma versión y el que escribe último
+ * pisa al otro: un usuario desaparece ("actualización perdida") o dos quedan con el mismo id.
+ *
+ * flock() (file lock) le pide al sistema operativo un bloqueo sobre el archivo, como la llave
+ * de un baño: mientras un proceso la tiene, los demás que llaman a flock() esperan su turno.
+ * - LOCK_SH (compartido), para leer: varios pueden leer a la vez, pero nadie escribe mientras tanto.
+ * - LOCK_EX (exclusivo), para escribir: uno solo; los demás esperan hasta que termine.
+ * - LOCK_UN: devuelve la llave.
+ * El bloqueo es cooperativo: solo lo respeta el código que también usa flock() (un editor de
+ * texto no espera a nadie). Una base de datos resuelve esto sola con transacciones; es una de
+ * las razones para migrar a una.
  */
 final class JsonUserRepository implements UserRepositoryInterface
 {
@@ -40,6 +48,9 @@ final class JsonUserRepository implements UserRepositoryInterface
     {
         $handle = $this->open('c+');   // c+: lo crea si no existe, sin borrar el contenido
         try {
+            // Bloqueo exclusivo: si otra petición está leyendo o escribiendo el archivo, esta espera.
+            // Desde acá hasta LOCK_UN nadie más lo toca, así que "leer -> controlar duplicados ->
+            // agregar -> escribir" ocurre completo, sin que otro registro se meta en el medio.
             flock($handle, LOCK_EX);
             $rows = $this->read($handle);
 
@@ -71,6 +82,8 @@ final class JsonUserRepository implements UserRepositoryInterface
 
             return $user;
         } finally {
+            // Libera el bloqueo (en finally: también si hubo un error o un usuario duplicado),
+            // así la siguiente petición que estaba esperando puede seguir.
             flock($handle, LOCK_UN);
             fclose($handle);
         }
@@ -95,6 +108,8 @@ final class JsonUserRepository implements UserRepositoryInterface
 
         $handle = $this->open('r');
         try {
+            // Bloqueo compartido: otras lecturas pueden ocurrir a la vez, pero si alguien está
+            // escribiendo, se espera a que termine (así nunca se lee un archivo a medio escribir).
             flock($handle, LOCK_SH);
             return $this->read($handle);
         } finally {

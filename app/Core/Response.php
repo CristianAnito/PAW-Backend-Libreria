@@ -8,6 +8,9 @@ namespace App\Core;
  */
 final class Response
 {
+    /** @var array<string, array{value: string, options: array}> Cookies a enviar (Set-Cookie). */
+    private array $cookies = [];
+
     public function __construct(
         private string $body = '',
         private int $status = 200,
@@ -50,9 +53,26 @@ final class Response
         return $clone;
     }
 
+    /**
+     * Copia de la respuesta que además le pide al navegador guardar una cookie.
+     *
+     * @param array $options Opciones de setcookie(): expires, path, secure, httponly, samesite.
+     */
+    public function withCookie(string $name, string $value, array $options): self
+    {
+        $clone = clone $this;
+        $clone->cookies[$name] = ['value' => $value, 'options' => $options];
+        return $clone;
+    }
+
     public function send(): void
     {
         http_response_code($this->status);
+
+        // Cada cookie viaja en su propia cabecera Set-Cookie.
+        foreach ($this->cookies as $name => $cookie) {
+            setcookie($name, $cookie['value'], $cookie['options']);
+        }
 
         foreach ($this->headers as $name => $value) {
             header($name . ': ' . $value);

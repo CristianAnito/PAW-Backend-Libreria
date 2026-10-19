@@ -15,6 +15,7 @@ final class Request
      * @param array  $query   Parámetros de la query string ($_GET).
      * @param array  $body    Cuerpo JSON decodificado.
      * @param array  $headers Cabeceras con el nombre en minúsculas (ej. 'origin').
+     * @param array  $cookies Cookies que envió el navegador ($_COOKIE).
      */
     public function __construct(
         public readonly string $method,
@@ -22,6 +23,7 @@ final class Request
         public readonly array $query = [],
         public readonly array $body = [],
         public readonly array $headers = [],
+        public readonly array $cookies = [],
     ) {}
 
     /**
@@ -53,6 +55,7 @@ final class Request
             $_GET,
             self::parseBody($headers['content-type'] ?? ''),
             $headers,
+            $_COOKIE,
         );
     }
 
@@ -104,6 +107,13 @@ final class Request
     public function input(string $key, mixed $default = null): mixed
     {
         return $this->body[$key] ?? $default;
+    }
+
+    // Una cookie (solo si es texto), o null si no vino.
+    public function cookie(string $name): ?string
+    {
+        $value = $this->cookies[$name] ?? null;
+        return is_string($value) ? $value : null;
     }
 
     // Una cabecera (nombre sin distinguir mayúsculas), o $default si no vino.
