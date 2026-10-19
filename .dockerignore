@@ -1,0 +1,15 @@
+# Lo que NO entra en la imagen del contenedor.
+
+# Secretos y datos locales: en Render se configuran como variables de entorno.
+.env
+storage/data/users.json
+storage/logs/*.log
+
+# Se instalan dentro de la imagen (Dockerfile).
+vendor/
+
+# Control de versiones y editor.
+.git
+.gitignore
+.vscode
+.DS_Store
