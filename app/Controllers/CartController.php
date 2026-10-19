@@ -3,92 +3,98 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Core\{Request, Response, Session};
+use App\Core\{Request, Response};
 use App\Services\Cart;
 
 /**
- * Carrito de compras. Las acciones que lo modifican son POST y terminan
- * en una redirección al carrito (Post/Redirect/Get).
+ * Carrito de compras (guardado en la sesión del visitante).
+ * Todas las acciones responden con el carrito actualizado, así el frontend
+ * lo vuelve a mostrar sin hacer otra petición.
  */
 final class CartController extends Controller
 {
     /**
-     * GET /carrito
+     * GET /api/carrito
      */
     public function index(Request $request): Response
     {
-        $cart = $this->cart();
-
-        return $this->render('cart/index', [
-            'title'       => 'Carrito',
-            'extraCss'    => ['/assets/css/carrito.css'],
-            'lines'       => $cart->lines(),
-            'total'       => $cart->total(),
-            'maxQuantity' => Cart::MAX_QUANTITY,
-            'error'       => Session::pullFlash('cart_error'),
-        ]);
+        return Response::json(['data' => $this->cart()->toArray()]);
     }
 
     /**
-     * POST /carrito/agregar  (libro)
+     * POST /api/carrito/items  {"libro": "slug", "cantidad": 1}
+     * Suma ejemplares de un libro (cantidad opcional, 1 por defecto).
      */
     public function add(Request $request): Response
     {
-        $slug = $this->bookSlug($request);
-        if ($slug === null) {
-            return $this->notFound();
+        $slug = $request->input('libro');
+        if (!$this->exists($slug)) {
+            return $this->notFound('El libro solicitado no existe.');
         }
 
-        $this->cart()->add($slug);
-        return $this->backToCart();
+        $quantity = $this->quantity($request->input('cantidad', 1));
+        if ($quantity === null) {
+            return $this->quantityError();
+        }
+
+        $this->cart()->add($slug, $quantity);
+        return $this->index($request);
     }
 
     /**
-     * POST /carrito/actualizar  (libro, cantidad)
+     * PATCH /api/carrito/items/{slug}  {"cantidad": 3}
+     * Reemplaza la cantidad de un libro que ya está en el carrito.
      */
-    public function update(Request $request): Response
+    public function update(Request $request, string $slug): Response
     {
-        $slug = $this->bookSlug($request);
-        if ($slug === null) {
-            return $this->notFound();
+        if (!$this->cart()->has($slug)) {
+            return $this->notFound('El libro no está en el carrito.');
         }
 
-        $quantity = filter_var($request->input('cantidad'), FILTER_VALIDATE_INT, [
-            'options' => ['min_range' => 1, 'max_range' => Cart::MAX_QUANTITY],
-        ]);
-        if ($quantity === false) {
-            Session::flash('cart_error', 'La cantidad debe ser un número entre 1 y ' . Cart::MAX_QUANTITY . '.');
-        } else {
-            $this->cart()->update($slug, $quantity);
+        $quantity = $this->quantity($request->input('cantidad'));
+        if ($quantity === null) {
+            return $this->quantityError();
         }
 
-        return $this->backToCart();
+        $this->cart()->update($slug, $quantity);
+        return $this->index($request);
     }
 
     /**
-     * POST /carrito/eliminar  (libro)
+     * DELETE /api/carrito/items/{slug}
      */
-    public function remove(Request $request): Response
+    public function remove(Request $request, string $slug): Response
     {
-        $slug = $this->bookSlug($request);
-        if ($slug === null) {
-            return $this->notFound();
+        if (!$this->cart()->has($slug)) {
+            return $this->notFound('El libro no está en el carrito.');
         }
 
         $this->cart()->remove($slug);
-        return $this->backToCart();
+        return $this->index($request);
     }
 
-    // Slug enviado en el campo "libro", solo si corresponde a un libro del catálogo.
-    private function bookSlug(Request $request): ?string
+    // true si $slug es un texto que corresponde a un libro del catálogo.
+    private function exists(mixed $slug): bool
     {
-        $slug = $request->input('libro');
-        return is_string($slug) && $this->books()->findBySlug($slug) !== null ? $slug : null;
+        return is_string($slug) && $this->books()->findBySlug($slug) !== null;
     }
 
-    private function backToCart(): Response
+    // Cantidad entera entre 1 y el máximo permitido, o null si no es válida.
+    private function quantity(mixed $value): ?int
     {
-        // 303 See Other: después de un POST, el navegador pide /carrito con GET.
-        return Response::redirect('/carrito', 303);
+        if (!is_int($value) && !is_string($value)) {
+            return null;
+        }
+        $quantity = filter_var($value, FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 1, 'max_range' => Cart::MAX_QUANTITY],
+        ]);
+        return $quantity === false ? null : $quantity;
+    }
+
+    private function quantityError(): Response
+    {
+        return $this->validationError([
+            'cantidad' => 'La cantidad debe ser un número entre 1 y ' . Cart::MAX_QUANTITY . '.',
+        ]);
     }
 }

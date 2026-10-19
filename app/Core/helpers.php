@@ -2,15 +2,6 @@
 declare(strict_types=1);
 
 /**
- * Escapa un valor para imprimirlo en HTML de forma segura.
- * Uso en vistas: <?= e($titulo) ?>
- */
-function e(mixed $value): string
-{
-    return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
-
-/**
  * Lee una variable de entorno (del servidor o de .env, ver Config::load).
  * Convierte 'true', 'false' y 'null' a su tipo. Uso en config/*.php: env('APP_ENV', 'production').
  */
@@ -29,9 +20,8 @@ function env(string $name, mixed $default = null): mixed
     };
 }
 
-
 /**
- * Formatea un precio en pesos: 30499 -> "$30.499".
+ * Formatea un precio en pesos: 30499 -> "$30.499" (se usa en el mail de compra).
  */
 function money(float $amount): string
 {

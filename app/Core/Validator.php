@@ -30,7 +30,12 @@ final class Validator
         foreach ($rules as $field => $fieldRules) {
             $value = $data[$field] ?? '';
 
-            // Un campo enviado como array (campo[]=...) nunca es válido en estos formularios.
+            // En JSON un número llega como int/float ({"documento": 12345678}): se valida como texto.
+            if (is_int($value) || is_float($value)) {
+                $value = (string) $value;
+            }
+
+            // Un campo enviado como array u objeto nunca es válido en estos formularios.
             if (!is_string($value)) {
                 $errors[$field] = 'El valor ingresado no es válido.';
                 continue;

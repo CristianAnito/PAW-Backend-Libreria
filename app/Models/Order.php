@@ -7,9 +7,9 @@ namespace App\Models;
  * Pedido de compra: datos del cliente + renglones del carrito.
  * El pago es solo con Mercado Pago, por eso no se piden datos de pago.
  *
- * Las constantes son la única definición de las reglas de validación:
- * las usan tanto el formulario HTML (atributos minlength, pattern...) como
- * el Validator del servidor, así frontend y backend no pueden quedar distintos.
+ * Las constantes definen las reglas de validación del servidor (Validator).
+ * El formulario del frontend (js/validaciones.js) repite los mismos valores en sus
+ * atributos minlength, pattern...: si se cambia una regla, hay que cambiarla en los dos.
  */
 final class Order
 {
