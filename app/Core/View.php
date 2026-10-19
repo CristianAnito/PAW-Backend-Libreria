@@ -1,34 +1,31 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Core;
 
-class View
+/**
+ * Motor de vistas: renderiza una plantilla dentro de un layout.
+ * Devuelve un string (HTML), nunca un Response.
+ */
+final class View
 {
-    public static function render(string $view, array $data = []): Response
+    public function __construct(private string $viewsPath) {}
+
+    public function render(string $view, array $data = [], string $layout = 'layouts/main'): string 
     {
-        extract($data);
+        // 1) Se renderiza la vista de la página.
+        $content = $this->capture($view, $data);
 
-        $viewPath = __DIR__ . "/../Views/{$view}.php";
+        // 2) Se renderiza el layout, que imprime $content con <?= $content.
+        return $this->capture($layout, $data + ['content' => $content]);
+    }
 
-        if (!file_exists($viewPath)) {
-            throw new \Exception("View not found: {$view}");
-        }
-
+    /** Ejecuta una plantilla PHP con las variables de $data y devuelve su salida. */
+    private function capture(string $view, array $data): string
+    {
+        extract($data, EXTR_SKIP);
         ob_start();
-        require $viewPath;
-        $content = ob_get_clean();
-
-        // Check if layout should be wrapped or if it is a layout itself
-        if (str_starts_with($view, 'layouts/') || str_starts_with($view, 'errors/')) {
-            return new Response($content);
-        }
-
-        // Wrap in main layout by default
-        ob_start();
-        $contentLayout = $content;
-        require __DIR__ . '/../Views/layouts/main.php';
-        $fullContent = ob_get_clean();
-
-        return new Response($fullContent);
+        require $this->viewsPath . '/' . $view . '.php';
+        return (string) ob_get_clean();
     }
 }

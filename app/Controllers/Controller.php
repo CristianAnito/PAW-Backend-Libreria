@@ -6,7 +6,7 @@ namespace App\Controllers;
 use App\Core\{Request, Response, View};
 
 /**
- * Clase base de todos los controladores.
+ * Clase base de los controladores.
  */
 abstract class Controller
 {
@@ -21,7 +21,7 @@ abstract class Controller
      */
     protected function render(string $template, array $data = [], int $status = 200): Response
     {
-        // Ruta actual, usada por el menú para marcar el enlace activo.
+        // Ruta actual: la usa nav.php para marcar el enlace activo.
         $data['currentPath'] ??= Request::fromGlobals()->path;
 
         return new Response($this->view->render($template, $data), $status);

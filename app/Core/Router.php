@@ -1,61 +1,46 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Core;
 
-class Router
+/**
+ * Mapea método HTTP + URL a un controlador y acción.
+ * Soporta segmentos dinámicos: /catalogo/{slug}
+ */
+final class Router
 {
-    protected array $routes = [];
+    /** @var array<int, array{0: string, 1: string, 2: array}> */
+    private array $routes = [];
 
-    public function add(string $method, string $uri, array $action): void
+    /**
+     * Registra una ruta.
+     *
+     * @param string $method  Método HTTP (GET, POST...)
+     * @param string $pattern URL, con segmentos {nombre} opcionales
+     * @param array  $handler [Controlador::class, 'acción']
+     */
+    public function add(string $method, string $pattern, array $handler): void
     {
-        $this->routes[strtoupper($method)][$uri] = $action;
+        // Convierte {slug} en un grupo con nombre: (?P<slug>[^/]+)
+        $regex = '#^' . preg_replace('#\{(\w+)\}#', '(?P<$1>[^/]+)', $pattern) . '$#';
+        $this->routes[] = [strtoupper($method), $regex, $handler];
     }
 
-    public function dispatch(Request $request): Response
+    /**
+     * Busca la ruta que coincide con la petición.
+     *
+     * @return array{0: array, 1: array}|null  [handler, parámetros] o null si no hay coincidencia
+     */
+    public function dispatch(Request $request): ?array
     {
-        $method = $request->method();
-        $uri = $request->uri();
-
-        // Direct match
-        if (isset($this->routes[$method][$uri])) {
-            return $this->callAction($this->routes[$method][$uri], []);
-        }
-
-        // Dynamic route matching (e.g. /catalogo/{slug} or /reservar/{slug})
-        foreach ($this->routes[$method] ?? [] as $routeUri => $action) {
-            $pattern = $this->convertToRegex($routeUri);
-            if (preg_match($pattern, $uri, $matches)) {
-                array_shift($matches); // Remove full match
-                return $this->callAction($action, $matches);
+        foreach ($this->routes as [$method, $regex, $handler]) {
+            if ($method === $request->method && preg_match($regex, $request->path, $matches)) {
+                // Se conservan solo los grupos con nombre (los parámetros de la ruta).
+                $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
+                return [$handler, $params];
             }
         }
 
-        // 404 Not Found
-        $controller = new \App\Controllers\ErrorController();
-        return $controller->notFound();
-    }
-
-    protected function convertToRegex(string $routeUri): string
-    {
-        // Convert {param} to named/unnamed regex capture group
-        $pattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '([a-zA-Z0-9\-_]+)', $routeUri);
-        return "#^" . $pattern . "$#";
-    }
-
-    protected function callAction(array $action, array $params): Response
-    {
-        [$controllerClass, $method] = $action;
-        
-        if (!class_exists($controllerClass)) {
-            throw new \Exception("Controller not found: {$controllerClass}");
-        }
-
-        $controller = new $controllerClass();
-
-        if (!method_exists($controller, $method)) {
-            throw new \Exception("Method {$method} not found in controller {$controllerClass}");
-        }
-
-        return call_user_func_array([$controller, $method], $params);
+        return null;
     }
 }

@@ -1,54 +1,61 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Core;
 
-class Request
+/**
+ * Representa la petición HTTP entrante (método, ruta, query string y cuerpo).
+ */
+final class Request
 {
-    protected string $uri;
-    protected string $method;
-    protected array $get;
-    protected array $post;
+    public function __construct(
+        public readonly string $method,
+        public readonly string $path,
+        public readonly array $query,
+        public readonly array $body,
+    ) {}
 
-    public function __construct()
+    /** Construye la petición a partir de las superglobales de PHP. */
+    public static function fromGlobals(): self
     {
-        $this->uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
-        // Remove trailing slash except for root
-        if ($this->uri !== '/' && str_ends_with($this->uri, '/')) {
-            $this->uri = rtrim($this->uri, '/');
-        }
-        $this->method = strtoupper($_SERVER['REQUEST_METHOD']);
-        $this->get = $_GET;
-        $this->post = $_POST;
+        $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+        $path = '/' . trim($path, '/');
+
+        return new self(
+            strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET'),
+            $path,
+            $_GET,
+            $_POST,
+        );
     }
 
-    public function uri(): string
-    {
-        return $this->uri;
-    }
-
-    public function method(): string
-    {
-        return $this->method;
-    }
-
-    public function get(string $key = null, $default = null)
+    /**
+     * Lee de la query string ($_GET).
+     * Sin $key devuelve todo el arreglo.
+     */
+    public function get(?string $key = null, mixed $default = null): mixed
     {
         if ($key === null) {
-            return $this->get;
+            return $this->query;
         }
-        return $this->get[$key] ?? $default;
+        return $this->query[$key] ?? $default;
     }
 
-    public function post(string $key = null, $default = null)
+    /**
+     * Lee del cuerpo de la petición ($_POST).
+     * Sin $key devuelve todo el arreglo.
+     */
+    public function post(?string $key = null, mixed $default = null): mixed
     {
         if ($key === null) {
-            return $this->post;
+            return $this->body;
         }
-        return $this->post[$key] ?? $default;
+        return $this->body[$key] ?? $default;
     }
 
-    public function all(): array
+    /** Lee de body y, si no está, de la query string. */
+    public function input(string $key, mixed $default = null): mixed
     {
-        return array_merge($this->get, $this->post);
+        return $this->body[$key] ?? $this->query[$key] ?? $default;
     }
 }
