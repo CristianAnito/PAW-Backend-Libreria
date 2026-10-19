@@ -15,12 +15,9 @@ final class Session
             return;
         }
 
-        $https = ($_SERVER['HTTPS'] ?? '') === 'on'
-            || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
-
         session_start([
             'cookie_httponly' => true,     // JavaScript no puede leer la cookie (mitiga robo por XSS)
-            'cookie_secure'   => $https,   // en producción (HTTPS) la cookie solo viaja cifrada
+            'cookie_secure'   => Request::isHttps(), // en producción (HTTPS) la cookie solo viaja cifrada
             'cookie_samesite' => 'Lax',    // no se envía en POSTs desde otros sitios (mitiga CSRF)
             'use_strict_mode' => true,     // rechaza identificadores de sesión inventados
         ]);

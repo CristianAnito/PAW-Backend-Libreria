@@ -26,10 +26,16 @@ final class App
 
         // 2) Análisis de la petición HTTP (método, ruta, query, body, cabeceras).
         $request = Request::fromGlobals();
-        $cors = new Cors(Config::get('cors.allowed_origins', []));
+        $allowedOrigins = Config::get('cors.allowed_origins', []);
+        $cors = new Cors($allowedOrigins);
+        $csrf = new CsrfGuard($allowedOrigins);
 
         try {
-            $response = $cors->isPreflight($request) ? Response::empty() : $this->handle($request);
+            // Preflight de CORS: se responde sin ejecutar nada.
+            // Después, CsrfGuard frena las peticiones que modifican datos desde otros sitios.
+            $response = $cors->isPreflight($request)
+                ? Response::empty()
+                : ($csrf->check($request) ?? $this->handle($request));
         } catch (Throwable $e) {
             // Cualquier error no previsto: se registra y se responde 500 sin detalles internos.
             $response = $errors->handle($e);

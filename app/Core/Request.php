@@ -13,7 +13,7 @@ final class Request
      * @param string $method  HTTP en mayúsculas (GET, POST...).
      * @param string $path    Ruta sin query string ni barra final (ej. '/api/libros').
      * @param array  $query   Parámetros de la query string ($_GET).
-     * @param array  $body    Datos enviados: JSON decodificado o campos de formulario ($_POST).
+     * @param array  $body    Cuerpo JSON decodificado.
      * @param array  $headers Cabeceras con el nombre en minúsculas (ej. 'origin').
      */
     public function __construct(
@@ -57,17 +57,41 @@ final class Request
     }
 
     /**
-     * El frontend envía JSON (Content-Type: application/json), que PHP no carga en $_POST:
+     * La API solo acepta JSON (Content-Type: application/json), que PHP no carga en $_POST:
      * hay que leer el cuerpo crudo y decodificarlo. Un JSON inválido se trata como cuerpo vacío
      * (la validación del controlador informa los campos faltantes).
+     * Otros formatos (formularios) los rechaza CsrfGuard antes de llegar al controlador.
      */
     private static function parseBody(string $contentType): array
     {
-        if (str_starts_with(strtolower($contentType), 'application/json')) {
-            $data = json_decode((string) file_get_contents('php://input'), true);
-            return is_array($data) ? $data : [];
+        if (!self::isJsonContentType($contentType)) {
+            return [];
         }
-        return $_POST;
+        $data = json_decode((string) file_get_contents('php://input'), true);
+        return is_array($data) ? $data : [];
+    }
+
+    private static function isJsonContentType(string $contentType): bool
+    {
+        // Admite parámetros: "application/json; charset=utf-8".
+        return strtolower(trim(explode(';', $contentType)[0])) === 'application/json';
+    }
+
+    // true si el cuerpo de la petición es JSON.
+    public function isJson(): bool
+    {
+        return self::isJsonContentType((string) $this->header('content-type', ''));
+    }
+
+    /**
+     * true si la petición llegó por HTTPS. En Render (y otros servicios) PHP corre detrás de un
+     * proxy que recibe el HTTPS y le pasa la petición por HTTP: el protocolo original viene en
+     * la cabecera X-Forwarded-Proto. Se usa para marcar las cookies como Secure.
+     */
+    public static function isHttps(): bool
+    {
+        return ($_SERVER['HTTPS'] ?? '') === 'on'
+            || strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
     }
 
     // Un parámetro de la query string (?q=...), o $default si no vino.
