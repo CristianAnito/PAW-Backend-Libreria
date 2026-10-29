@@ -52,7 +52,7 @@
         "price": 27500,
         "summary": "Una obra maestra de la literatura latinoamericana y del realismo mágico.",
         "synopsis": "La historia de la familia Buendía a lo largo de siete generaciones en el pueblo ficticio de Macondo, entre guerras, amores, inventos y soledades.",
-        "cover": null
+        "cover": "cien-anos-de-soledad.jpg"
     },
     {
         "id": 6,
@@ -63,7 +63,7 @@
         "price": 24900,
         "summary": "Novela emblemática que invita a múltiples lecturas.",
         "synopsis": "Horacio Oliveira busca sentido entre París y Buenos Aires. El libro puede leerse de corrido o saltando capítulos según el tablero de dirección que propone el autor.",
-        "cover": null
+        "cover": "rayuela.jpg"
     },
     {
         "id": 7,
@@ -74,7 +74,7 @@
         "price": 19800,
         "summary": "Colección de cuentos fundamentales de la literatura fantástica.",
         "synopsis": "Bibliotecas infinitas, laberintos, memorias perfectas y mundos inventados: los cuentos más célebres de Borges reunidos en un solo volumen.",
-        "cover": null
+        "cover": "ficciones.jpg"
     },
     {
         "id": 8,
@@ -85,7 +85,7 @@
         "price": 16500,
         "summary": "Novela psicológica narrada por un pintor obsesionado.",
         "synopsis": "Juan Pablo Castel, pintor, confiesa desde la cárcel el crimen de María Iribarne y reconstruye la obsesión que lo llevó hasta él.",
-        "cover": null
+        "cover": "el-tunel.jpg"
     },
     {
         "id": 9,
@@ -96,7 +96,7 @@
         "price": 17900,
         "summary": "El diario de un oficinista a punto de jubilarse que vuelve a enamorarse.",
         "synopsis": "Martín Santomé, viudo y cerca del retiro, registra en su diario la rutina de Montevideo hasta que la llegada de Laura Avellaneda le da una tregua inesperada.",
-        "cover": null
+        "cover": "la-tregua.png"
     },
     {
         "id": 10,
@@ -107,7 +107,7 @@
         "price": 12900,
         "summary": "El poema nacional argentino.",
         "synopsis": "En versos gauchescos, Martín Fierro relata las injusticias que sufre al ser reclutado para la frontera y su vida como desertor.",
-        "cover": null
+        "cover": "martin-fierro.jpg"
     },
     {
         "id": 11,
@@ -129,6 +129,204 @@
         "price": 23500,
         "summary": "Lo que los ricos enseñan a sus hijos sobre el dinero.",
         "synopsis": "A partir de las enseñanzas de dos figuras paternas con visiones opuestas, el autor plantea ideas sobre educación financiera, activos y pasivos.",
-        "cover": null
+        "cover": "padre-rico-padre-pobre.jpg"
+    },
+    {
+        "id": 13,
+        "slug": "el-principito",
+        "title": "El principito",
+        "author": "Antoine de Saint-Exupéry",
+        "genre": "Novela",
+        "price": 14500,
+        "summary": "Un clásico sobre la amistad, el amor y la mirada de los niños.",
+        "synopsis": "Un aviador perdido en el desierto del Sahara conoce a un pequeño príncipe llegado de otro planeta, que le cuenta sus viajes y lo que aprendió sobre las personas adultas.",
+        "cover": "el-principito.jpg"
+    },
+    {
+        "id": 14,
+        "slug": "1984",
+        "title": "1984",
+        "author": "George Orwell",
+        "genre": "Novela",
+        "price": 21900,
+        "summary": "La novela distópica que imaginó un Estado que lo vigila todo.",
+        "synopsis": "Winston Smith trabaja reescribiendo la historia para el Partido en un mundo controlado por el Gran Hermano, hasta que empieza a cuestionar el sistema.",
+        "cover": "1984.jpg"
+    },
+    {
+        "id": 15,
+        "slug": "orgullo-y-prejuicio",
+        "title": "Orgullo y prejuicio",
+        "author": "Jane Austen",
+        "genre": "Novela",
+        "price": 18700,
+        "summary": "Una de las novelas románticas más leídas de la literatura inglesa.",
+        "synopsis": "Elizabeth Bennet y el señor Darcy deben superar sus primeras impresiones y sus prejuicios en la Inglaterra rural de principios del siglo XIX.",
+        "cover": "orgullo-y-prejuicio.jpg"
+    },
+    {
+        "id": 16,
+        "slug": "el-aleph",
+        "title": "El Aleph",
+        "author": "Jorge Luis Borges",
+        "genre": "Cuentos",
+        "price": 19500,
+        "summary": "Cuentos sobre el infinito, la identidad y el tiempo.",
+        "synopsis": "En el sótano de una casa de la calle Garay, el narrador descubre un punto que contiene todos los puntos del universo. Junto a ese relato, el libro reúne otros cuentos célebres de Borges.",
+        "cover": "el-aleph.jpg"
+    },
+    {
+        "id": 17,
+        "slug": "bestiario",
+        "title": "Bestiario",
+        "author": "Julio Cortázar",
+        "genre": "Cuentos",
+        "price": 17200,
+        "summary": "El primer libro de cuentos de Cortázar, donde lo extraño irrumpe en lo cotidiano.",
+        "synopsis": "Ocho relatos, entre ellos \"Casa tomada\", en los que situaciones comunes se ven alteradas por presencias inexplicables.",
+        "cover": "bestiario.jpg"
+    },
+    {
+        "id": 18,
+        "slug": "pedro-paramo",
+        "title": "Pedro Páramo",
+        "author": "Juan Rulfo",
+        "genre": "Novela",
+        "price": 15800,
+        "summary": "Una novela fundamental de la literatura mexicana.",
+        "synopsis": "Juan Preciado viaja a Comala para buscar a su padre, Pedro Páramo, y encuentra un pueblo habitado por voces y recuerdos de los muertos.",
+        "cover": "pedro-paramo.jpg"
+    },
+    {
+        "id": 19,
+        "slug": "la-casa-de-los-espiritus",
+        "title": "La casa de los espíritus",
+        "author": "Isabel Allende",
+        "genre": "Novela",
+        "price": 26400,
+        "summary": "La saga de una familia chilena a lo largo de cuatro generaciones.",
+        "synopsis": "La historia de la familia Trueba, desde el patriarca Esteban hasta su nieta Alba, atravesada por el amor, la política y lo sobrenatural.",
+        "cover": "la-casa-de-los-espiritus.jpg"
+    },
+    {
+        "id": 20,
+        "slug": "sapiens",
+        "title": "Sapiens: De animales a dioses",
+        "author": "Yuval Noah Harari",
+        "genre": "Ensayo",
+        "price": 32900,
+        "summary": "Una breve historia de la humanidad.",
+        "synopsis": "Harari recorre la historia de nuestra especie, desde los primeros humanos hasta la actualidad, y analiza cómo las revoluciones cognitiva, agrícola y científica cambiaron el mundo.",
+        "cover": "sapiens.jpg"
+    },
+    {
+        "id": 21,
+        "slug": "el-hombre-en-busca-de-sentido",
+        "title": "El hombre en busca de sentido",
+        "author": "Viktor Frankl",
+        "genre": "Ensayo / Psicología",
+        "price": 16900,
+        "summary": "El testimonio de un psiquiatra que sobrevivió a los campos de concentración.",
+        "synopsis": "Viktor Frankl relata su experiencia en los campos nazis y presenta la logoterapia, que sostiene que la búsqueda de sentido es la principal motivación del ser humano.",
+        "cover": "el-hombre-en-busca-de-sentido.jpg"
+    },
+    {
+        "id": 22,
+        "slug": "los-cuatro-acuerdos",
+        "title": "Los cuatro acuerdos",
+        "author": "Miguel Ruiz",
+        "genre": "Autoayuda / Espiritualidad",
+        "price": 13900,
+        "summary": "Cuatro principios basados en la sabiduría tolteca para vivir con más libertad.",
+        "synopsis": "El autor propone cuatro acuerdos (ser impecable con las palabras, no tomarse nada personalmente, no hacer suposiciones y hacer siempre lo máximo posible) para cambiar creencias que generan sufrimiento.",
+        "cover": "los-cuatro-acuerdos.jpg"
+    },
+    {
+        "id": 23,
+        "slug": "el-alquimista",
+        "title": "El alquimista",
+        "author": "Paulo Coelho",
+        "genre": "Novela",
+        "price": 19900,
+        "summary": "Una fábula sobre seguir los propios sueños.",
+        "synopsis": "Santiago, un joven pastor andaluz, viaja hasta Egipto en busca de un tesoro y aprende en el camino a escuchar a su corazón.",
+        "cover": "el-alquimista.jpg"
+    },
+    {
+        "id": 24,
+        "slug": "veinte-poemas-de-amor",
+        "title": "Veinte poemas de amor y una canción desesperada",
+        "author": "Pablo Neruda",
+        "genre": "Poesía",
+        "price": 11500,
+        "summary": "Uno de los libros de poesía más leídos en español.",
+        "synopsis": "Publicado cuando Neruda tenía veinte años, reúne poemas sobre el deseo, el amor y la pérdida.",
+        "cover": "veinte-poemas-de-amor.png"
+    },
+    {
+        "id": 25,
+        "slug": "el-psicoanalista",
+        "title": "El psicoanalista",
+        "author": "John Katzenbach",
+        "genre": "Novela / Suspenso",
+        "price": 29900,
+        "summary": "Un thriller psicológico en el que un terapeuta tiene que salvar su vida.",
+        "synopsis": "El día de su cumpleaños, el psicoanalista Frederick Starks recibe una carta anónima: tiene quince días para descubrir quién la escribió o alguien de su familia morirá.",
+        "cover": "el-psicoanalista.jpg"
+    },
+    {
+        "id": 26,
+        "slug": "don-quijote",
+        "title": "Don Quijote de la Mancha",
+        "author": "Miguel de Cervantes",
+        "genre": "Novela",
+        "price": 34500,
+        "summary": "La obra cumbre de la literatura en español.",
+        "synopsis": "Un hidalgo que leyó demasiados libros de caballería decide convertirse en caballero andante y recorre España junto a su escudero, Sancho Panza.",
+        "cover": "don-quijote.jpg"
+    },
+    {
+        "id": 27,
+        "slug": "el-nino-con-el-pijama-de-rayas",
+        "title": "El niño con el pijama de rayas",
+        "author": "John Boyne",
+        "genre": "Novela",
+        "price": 17500,
+        "summary": "La amistad entre dos niños separados por una alambrada.",
+        "synopsis": "Bruno, hijo de un comandante nazi, se muda cerca de un campo de concentración y se hace amigo de Shmuel, un niño que vive del otro lado del alambrado.",
+        "cover": "el-nino-con-el-pijama-de-rayas.jpg"
+    },
+    {
+        "id": 28,
+        "slug": "el-hombre-mas-rico-de-babilonia",
+        "title": "El hombre más rico de Babilonia",
+        "author": "George S. Clason",
+        "genre": "Finanzas personales",
+        "price": 12500,
+        "summary": "Consejos sobre el ahorro y la inversión contados como parábolas.",
+        "synopsis": "A través de historias ambientadas en la antigua Babilonia, el libro explica principios básicos para administrar el dinero, ahorrar e invertir.",
+        "cover": "el-hombre-mas-rico-de-babilonia.jpg"
+    },
+    {
+        "id": 29,
+        "slug": "piense-y-hagase-rico",
+        "title": "Piense y hágase rico",
+        "author": "Napoleon Hill",
+        "genre": "Finanzas personales",
+        "price": 15500,
+        "summary": "Uno de los libros de desarrollo personal más vendidos de la historia.",
+        "synopsis": "A partir de entrevistas con personas exitosas de su época, Napoleon Hill propone principios sobre la mentalidad, la persistencia y la planificación para alcanzar metas.",
+        "cover": "piense-y-hagase-rico.png"
+    },
+    {
+        "id": 30,
+        "slug": "toda-mafalda",
+        "title": "Toda Mafalda",
+        "author": "Quino",
+        "genre": "Historieta",
+        "price": 45900,
+        "summary": "Todas las tiras de Mafalda reunidas en un solo volumen.",
+        "synopsis": "La niña que se preocupa por la humanidad, la paz mundial y la sopa, junto a Felipe, Manolito, Susanita, Miguelito, Libertad y Guille.",
+        "cover": "toda-mafalda.png"
     }
 ]

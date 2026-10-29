@@ -13,6 +13,7 @@ use App\Controllers\{AuthController, CatalogController, CartController, Checkout
  */
 return [
     ['GET',    '/api/libros',              [CatalogController::class,  'index']],
+    ['GET',    '/api/libros/todos',        [CatalogController::class,  'all']],
     ['GET',    '/api/libros/export.csv',   [CatalogController::class,  'exportCsv']],
     ['GET',    '/api/libros/{slug}',       [CatalogController::class,  'show']],
 
