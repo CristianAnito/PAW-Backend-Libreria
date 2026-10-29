@@ -53,6 +53,20 @@ final class CatalogController extends Controller
     }
 
     /**
+     * GET /api/libros/todos
+     * Todos los libros, sin filtrar, ordenar ni paginar: el frontend hace eso en JS.
+     *
+     * Respuesta: {"data": [libro...], "sorts": {clave: texto}}
+     */
+    public function all(Request $request): Response
+    {
+        return Response::json([
+            'data'  => array_map(fn (Book $book) => $book->toArray(), $this->books()->search()),
+            'sorts' => BookRepositoryInterface::SORTS,
+        ]);
+    }
+
+    /**
      * GET /api/libros/{slug}
      */
     public function show(Request $request, string $slug): Response
