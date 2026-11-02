@@ -44,6 +44,22 @@ Iguales en el frontend (`js/validaciones.js`, atributos HTML) y en el backend (`
 | Errores sin información sensible | Los errores internos responden un mensaje genérico (el detalle va al log). Los stack traces del log no incluyen argumentos (contraseñas). No se envía la versión de PHP (`X-Powered-By`). |
 | Campos mal formados | Un campo enviado como array u objeto responde 422, nunca un error 500. |
 
+## Roles: cliente y dueño
+
+| Rol | Quién | Cómo se crea |
+|---|---|---|
+| `cliente` | Todo el que se registra desde el sitio | Registro (`POST /api/auth/registro`). El rol nunca se toma de la petición. |
+| `duenio` | El dueño de la librería: el único que puede cargar libros | **No se registra.** La API crea la cuenta con `OWNER_USERNAME`, `OWNER_EMAIL` y `OWNER_PASSWORD_HASH` (`.env` o variables de Render). |
+
+Cómo funciona la cuenta del dueño (`app/Services/OwnerAccount.php`):
+
+- Se comprueba antes de usar los usuarios en cada petición (`Controller::users()`): si no existe, se crea. Por eso en Render, donde el disco se borra al reiniciar, vuelve a existir sola.
+- Como se crea antes de procesar cualquier registro, **nadie puede registrarse con su nombre ni con su email**.
+- La contraseña es siempre la configurada: si se cambia `OWNER_PASSWORD_HASH`, se actualiza.
+- En la configuración va el **hash** de la contraseña (nunca la contraseña): `php -r "echo password_hash('la-contraseña', PASSWORD_DEFAULT);"`.
+- Si ya existe un **cliente** con ese nombre, no se lo convierte en dueño (sería darle permisos a otra persona): se registra en el log y hay que elegir otro `OWNER_USERNAME`. Lo mismo si la configuración es inválida: el log nombra las variables mal configuradas, nunca sus valores.
+- Sin esas variables, el sitio funciona igual, solo que no hay dueño.
+
 ## API
 
 | Método | URL | Respuesta |
@@ -53,7 +69,7 @@ Iguales en el frontend (`js/validaciones.js`, atributos HTML) y en el backend (`
 | POST | `/api/auth/logout` | 204, borra la cookie |
 | GET | `/api/auth/yo` | Usuario actual · 401 sin sesión (y borra una cookie vencida o alterada) |
 
-Usuario devuelto: `{id, username, email, phone}`.
+Usuario devuelto: `{id, username, email, phone, role}`. `role` es `cliente` para todo el que se registra desde el sitio (aunque la petición envíe otro rol, se ignora) o `duenio` para el dueño de la librería. Un usuario guardado sin rol, o con un rol desconocido, se trata como cliente.
 
 ## Archivos
 
@@ -62,7 +78,7 @@ Usuario devuelto: `{id, username, email, phone}`.
 | Archivo | Función |
 |---|---|
 | `app/Controllers/AuthController.php` | Registro, login, logout y usuario actual. |
-| `app/Controllers/Controller.php` | `currentUser()` (usuario o null) y `requireAuth()` (401 si no hay sesión), para cualquier controlador. |
+| `app/Controllers/Controller.php` | `currentUser()` (usuario o null), `requireAuth()` (401 si no hay sesión) y `requireOwner()` (401 sin sesión, 403 si no es el dueño), para cualquier controlador. |
 | `app/Models/User.php` | Entidad usuario y reglas de validación. |
 | `app/Repositories/UserRepositoryInterface.php` | Qué operaciones existen sobre los usuarios. |
 | `app/Repositories/JsonUserRepository.php` | Implementación con `storage/data/users.json` y `flock`. |

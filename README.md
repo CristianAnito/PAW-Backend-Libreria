@@ -41,7 +41,7 @@ El flujo es: `Request` → `Router` → `Controller` → `Repository/Model` → 
 | `app/Services/` | Lógica auxiliar (carrito, paginado, exportación CSV) |
 | `app/Views/emails/` | Plantillas de texto de los mails (lo único que se genera en el servidor) |
 | `config/` | Configuración y definición de rutas |
-| `storage/` | Datos (`books.json`) y logs |
+| `storage/` | Datos (`books.json`: catálogo base; `libros-cargados.json`: libros cargados por el dueño, fuera de git) y logs |
 
 ### Responsabilidades por módulo
 
@@ -66,7 +66,9 @@ El flujo es: `Request` → `Router` → `Controller` → `Repository/Model` → 
 |---|---|---|---|
 | GET | `/api/libros?q=&orden=&page=` | `CatalogController@index` | `{data: [libro], meta: {query, sort, page, per_page, total, total_pages}, sorts}` |
 | GET | `/api/libros/export.csv?q=&orden=` | `CatalogController@exportCsv` | archivo CSV |
+| GET | `/api/libros/todos` | `CatalogController@all` | `{data: [libro], sorts}` (sin filtrar ni paginar: lo hace el frontend) |
 | GET | `/api/libros/{slug}` | `CatalogController@show` | `{data: libro}` |
+| POST | `/api/libros` `{titulo, autor, genero, precio, resumen, sinopsis}` | `CatalogController@store` | 201 `{data: libro}` · **solo el dueño** (401 sin sesión, 403 cliente) · 422 datos inválidos o libro repetido |
 | GET | `/api/carrito` | `CartController@index` | `{data: carrito}` |
 | POST | `/api/carrito/items` `{libro, cantidad?}` | `CartController@add` | `{data: carrito}` |
 | PATCH | `/api/carrito/items/{slug}` `{cantidad}` | `CartController@update` | `{data: carrito}` |
@@ -81,7 +83,7 @@ Carrito y compra **requieren la sesión iniciada** (401 sin sesión).
 
 `carrito = {items: [{book, quantity, subtotal}], total, count, max_quantity}`
 
-`usuario = {id, username, email, phone}` (nunca incluye la contraseña ni su hash). La sesión es un JWT en la cookie `HttpOnly` `auth_token`: ver [docs/cookie-de-sesion.md](docs/cookie-de-sesion.md).
+`usuario = {id, username, email, phone, role}` (nunca incluye la contraseña ni su hash). `role`: `cliente` (todo el que se registra) o `duenio` (el dueño de la librería, creado desde la configuración). La sesión es un JWT en la cookie `HttpOnly` `auth_token`: ver [docs/cookie-de-sesion.md](docs/cookie-de-sesion.md).
 
 **Errores:** `{"error": {"message": "...", "fields": {"campo": "mensaje"}}}` con el código HTTP correspondiente
 (401 sin sesión o login incorrecto, 403 origen no permitido, 404 recurso inexistente, 409 carrito vacío, 415 cuerpo que no es JSON, 422 datos inválidos con `fields`, 500 error interno, 503 mail no enviado).
@@ -100,11 +102,11 @@ Carrito y compra **requieren la sesión iniciada** (401 sin sesión).
 - **Validación:** las reglas del backend (`Models/Order`) se repiten en el frontend (`js/validaciones.js`) para los atributos HTML; el backend siempre valida de nuevo.
 - **Correo:** al finalizar la compra se envía un mail al personal (`MAIL_TO`, configurable). Remitente: `MAIL_FROM`, una dirección del sitio verificada en el proveedor; el email del cliente va en `Reply-To` (nunca como remitente: sería falsificarlo y se rechazaría por SPF/DKIM/DMARC). `MAIL_DRIVER`: `log` (desarrollo), `smtp` (local) o `brevo` (producción: Render gratis bloquea los puertos SMTP, la API de Brevo usa HTTPS). Si el envío falla, 503 y el carrito no se vacía. Ver [docs/envio-de-mail.md](docs/envio-de-mail.md).
 - **Errores:** en `production` se responde un mensaje genérico y el detalle se registra en `storage/logs`; en `development` se agrega el detalle en `error.debug`. Los mensajes que sí ve el usuario (`HttpException`, validaciones, login) nunca incluyen datos internos; el login responde igual (mensaje y tiempo) exista o no el usuario. No se envía `X-Powered-By` (versión de PHP) y los stack traces del log no incluyen argumentos (contraseñas).
-- **Persistencia:** `BookRepositoryInterface` aísla el origen de datos (`books.json` ahora, base de datos en el TP siguiente).
+- **Persistencia:** `BookRepositoryInterface` aísla el origen de datos (`books.json` ahora, base de datos en el TP siguiente). Los libros que carga el dueño se guardan aparte, en `storage/data/libros-cargados.json` (fuera de git: probar la carga en local no modifica el catálogo del repositorio); el catálogo es la unión de los dos archivos. En Render el disco se borra al reiniciar, así que los libros cargados (como los usuarios) se pierden hasta usar la base de datos.
 
 ## Configuración
 
-Variables en `.env` (ver `.env.example`): `APP_ENV`, `APP_URL`, `LOG_FILE`, `CORS_ORIGINS`, `JWT_SECRET`, `JWT_TTL`, `MAIL_DRIVER`, `MAIL_TO`, `MAIL_FROM`, `BREVO_API_KEY`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS`.
+Variables en `.env` (ver `.env.example`): `APP_ENV`, `APP_URL`, `LOG_FILE`, `CORS_ORIGINS`, `JWT_SECRET`, `JWT_TTL`, `OWNER_USERNAME`, `OWNER_EMAIL`, `OWNER_PASSWORD_HASH`, `MAIL_DRIVER`, `MAIL_TO`, `MAIL_FROM`, `BREVO_API_KEY`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS`.
 
 ## Despliegue (Docker / Render)
 
@@ -128,6 +130,7 @@ En Render: *New → Web Service*, repositorio del backend, rama `main`, runtime 
 | `CORS_ORIGINS` | URL del frontend en Vercel (ej. `https://pawprints.vercel.app`) |
 | `JWT_SECRET` | Uno **nuevo** (`php -r "echo bin2hex(random_bytes(32));"`), distinto del de desarrollo |
 | `JWT_TTL` | `3600` |
+| `OWNER_USERNAME`, `OWNER_EMAIL`, `OWNER_PASSWORD_HASH` | Cuenta del dueño de la librería (único que puede cargar libros). `OWNER_PASSWORD_HASH` es el hash: `php -r "echo password_hash('la-contraseña', PASSWORD_DEFAULT);"` |
 | `MAIL_DRIVER` | `brevo` |
 | `BREVO_API_KEY`, `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_TO` | Ver [docs/envio-de-mail.md](docs/envio-de-mail.md) |
 
