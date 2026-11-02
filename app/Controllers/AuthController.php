@@ -76,6 +76,9 @@ final class AuthController extends Controller
                 // La contraseña nunca se guarda: solo su hash (bcrypt, con "sal" aleatoria incluida).
                 // Se usa tal como la escribió el usuario, sin quitarle espacios.
                 password_hash($password, PASSWORD_DEFAULT),
+                // Desde el sitio solo se crean clientes: el rol nunca se toma de lo que envía el usuario
+                // (un "role": "duenio" en el cuerpo de la petición se ignora).
+                User::ROLE_CLIENT,
             );
         } catch (UserAlreadyExistsException $e) {
             // Alguien registró el mismo usuario/email entre el control de arriba y el guardado.
@@ -155,21 +158,5 @@ final class AuthController extends Controller
             $jwt->issue($user),
             $jwt->ttl(),
         );
-    }
-
-    /**
-     * Un campo del cuerpo como texto ('' si no vino o si no es texto, ej. un array).
-     * Las contraseñas se usan sin quitar espacios: son parte de la contraseña.
-     */
-    private static function text(Request $request, string $field, bool $trim = true): string
-    {
-        $value = $request->input($field, '');
-        if (is_int($value) || is_float($value)) {
-            $value = (string) $value;
-        }
-        if (!is_string($value)) {
-            return '';
-        }
-        return $trim ? trim($value) : $value;
     }
 }
