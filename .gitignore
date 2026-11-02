@@ -5,3 +5,4 @@ storage/logs/*.log
 
 # Usuarios registrados (datos personales y hashes de contraseñas): nunca al repositorio.
 storage/data/users.json
+storage/data/libros-cargados.json
