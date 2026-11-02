@@ -29,6 +29,14 @@ final class User
     public const PASSWORD_MAX_BYTES = 72;
     public const PASSWORD_PATTERN = '(?=.*\p{L})(?=.*\d).+';   // al menos una letra y un número
 
+    /*
+     * Roles. Todo usuario que se registra en el sitio es cliente; el dueño de la librería
+     * (puede cargar libros) no se registra: lo crea la API a partir de la configuración (.env).
+     */
+    public const ROLE_CLIENT = 'cliente';
+    public const ROLE_OWNER = 'duenio';
+    public const ROLES = [self::ROLE_CLIENT, self::ROLE_OWNER];
+
     public function __construct(
         public readonly int $id,
         public readonly string $username,
@@ -36,10 +44,15 @@ final class User
         public readonly ?string $phone,
         public readonly string $passwordHash,   // resultado de password_hash(); nunca la contraseña
         public readonly string $createdAt,      // fecha de registro, ISO 8601
+        public readonly string $role = self::ROLE_CLIENT,
     ) {}
 
     public static function fromArray(array $data): self
     {
+        // Un rol que falta (usuarios guardados antes de que existieran los roles) o desconocido
+        // se lee como cliente: ante la duda, el usuario nunca recibe permisos de dueño.
+        $role = $data['role'] ?? self::ROLE_CLIENT;
+
         return new self(
             (int) $data['id'],
             (string) $data['username'],
@@ -47,7 +60,14 @@ final class User
             isset($data['phone']) && $data['phone'] !== '' ? (string) $data['phone'] : null,
             (string) $data['password_hash'],
             (string) $data['created_at'],
+            in_array($role, self::ROLES, true) ? $role : self::ROLE_CLIENT,
         );
+    }
+
+    // true si es el dueño de la librería (puede cargar libros).
+    public function isOwner(): bool
+    {
+        return $this->role === self::ROLE_OWNER;
     }
 
     /**
@@ -62,11 +82,14 @@ final class User
             'phone'         => $this->phone,
             'password_hash' => $this->passwordHash,
             'created_at'    => $this->createdAt,
+            'role'          => $this->role,
         ];
     }
 
     /**
      * Datos que se pueden enviar al frontend: nunca el hash de la contraseña.
+     * El rol se envía para que el frontend muestre u oculte opciones (ej. "Cargar libro");
+     * los permisos los controla siempre el backend.
      */
     public function toPublicArray(): array
     {
@@ -75,6 +98,7 @@ final class User
             'username' => $this->username,
             'email'    => $this->email,
             'phone'    => $this->phone,
+            'role'     => $this->role,
         ];
     }
 

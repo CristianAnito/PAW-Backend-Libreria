@@ -23,4 +23,14 @@ return [
 
     // Usuarios registrados (hasta que haya base de datos).
     'users_file' => dirname(__DIR__) . '/storage/data/users.json',
+
+    // Dueño de la librería (único usuario que puede cargar libros). No se registra desde el sitio:
+    // la API lo crea con estos datos si no existe (ver Services/OwnerAccount). Sin estos valores no hay dueño.
+    'owner' => [
+        'username'      => env('OWNER_USERNAME'),
+        'email'         => env('OWNER_EMAIL'),
+        // Hash de la contraseña (password_hash), nunca la contraseña. Generarlo con:
+        // php -r "echo password_hash('la-contraseña', PASSWORD_DEFAULT);"
+        'password_hash' => env('OWNER_PASSWORD_HASH'),
+    ],
 ];
