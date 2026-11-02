@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Core\{AuthCookie, Config, HttpException, Request, Response};
+use App\Core\{AuthCookie, Config, HttpException, Logger, Request, Response};
 use App\Models\User;
 use App\Repositories\{BookRepositoryInterface, JsonBookRepository, JsonUserRepository, UserRepositoryInterface};
-use App\Services\{Cart, JwtService};
+use App\Services\{Cart, JwtService, OwnerAccount};
 
 /**
  * Clase base de los controladores de la API.
@@ -39,16 +39,44 @@ abstract class Controller
         return Response::error('Revisá los campos marcados.', 422, $fields);
     }
 
-    // Acceso a los libros (hoy desde el JSON; se crea una sola vez por petición).
+    // Acceso a los libros: catálogo base + libros cargados por el dueño (se crea una sola vez por petición).
     protected function books(): BookRepositoryInterface
     {
-        return $this->books ??= new JsonBookRepository(Config::get('catalog.books_file'));
+        return $this->books ??= new JsonBookRepository(
+            Config::get('catalog.books_file'),
+            Config::get('catalog.loaded_books_file'),
+        );
     }
 
-    // Acceso a los usuarios (hoy desde el JSON; se crea una sola vez por petición).
+    /**
+     * Un campo del cuerpo como texto ('' si no vino o si no es texto, ej. un array).
+     * Las contraseñas se usan sin quitar espacios: son parte de la contraseña.
+     */
+    protected static function text(Request $request, string $field, bool $trim = true): string
+    {
+        $value = $request->input($field, '');
+        if (is_int($value) || is_float($value)) {
+            $value = (string) $value;
+        }
+        if (!is_string($value)) {
+            return '';
+        }
+        return $trim ? trim($value) : $value;
+    }
+
+    /**
+     * Acceso a los usuarios (hoy desde el JSON; se crea una sola vez por petición).
+     * Antes del primer uso se asegura que exista la cuenta del dueño (Services/OwnerAccount):
+     * así ningún registro puede ocupar su nombre, ni siquiera después de que Render borre el disco.
+     */
     protected function users(): UserRepositoryInterface
     {
-        return $this->users ??= new JsonUserRepository(Config::get('auth.users_file'));
+        if ($this->users === null) {
+            $this->users = new JsonUserRepository(Config::get('auth.users_file'));
+            $logger = Logger::create(Config::get('app.log.file'), Config::get('app.log.level'));
+            (new OwnerAccount(Config::get('auth.owner', []), $logger))->ensure($this->users);
+        }
+        return $this->users;
     }
 
     /**
@@ -81,6 +109,27 @@ abstract class Controller
     {
         return $this->currentUser($request)
             ?? throw new HttpException(401, 'Necesitás iniciar sesión.');
+    }
+
+    /**
+     * Usuario dueño de la librería; si no hay sesión corta con 401, y si es un cliente, con 403.
+     * Para las acciones que solo puede hacer el dueño (ej. cargar libros):
+     *
+     *   $owner = $this->requireOwner($request);
+     *
+     * El rol se lee del usuario guardado (repositorio), no del token: si cambia, vale enseguida.
+     * Ocultar opciones en el frontend es solo estético: este control es el que protege la acción.
+     *
+     * @throws HttpException 401 (sin sesión) o 403 (con sesión, pero sin permiso).
+     */
+    protected function requireOwner(Request $request): User
+    {
+        $user = $this->requireAuth($request);
+        if (!$user->isOwner()) {
+            // 403 Forbidden: se sabe quién es, pero no tiene permiso (401 es "no se sabe quién es").
+            throw new HttpException(403, 'No tenés permiso para realizar esta acción.');
+        }
+        return $user;
     }
 
     // Carrito del usuario (guardado en la sesión de PHP, uno por usuario).

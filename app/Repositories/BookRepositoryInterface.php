@@ -30,4 +30,23 @@ interface BookRepositoryInterface
 
     // El libro con ese slug, o null si no existe.
     public function findBySlug(string $slug): ?Book;
+
+    // El libro con ese título y autor (sin distinguir mayúsculas ni acentos), o null.
+    public function findByTitleAndAuthor(string $title, string $author): ?Book;
+
+    /**
+     * Guarda un libro nuevo y lo devuelve con su id y su slug (único, generado a partir del título).
+     *
+     * @throws BookAlreadyExistsException si ya hay un libro con el mismo título y autor.
+     *         Se controla en el mismo momento de guardar (como el registro de usuarios).
+     */
+    public function create(
+        string $title,
+        string $author,
+        string $genre,
+        float $price,
+        string $summary,
+        string $synopsis,
+        ?string $cover = null,
+    ): Book;
 }

@@ -22,9 +22,22 @@ interface UserRepositoryInterface
     /**
      * Guarda un usuario nuevo y lo devuelve con su id y fecha de registro.
      *
+     * @param string $role User::ROLE_CLIENT (registro desde el sitio) o User::ROLE_OWNER (dueño, desde .env).
      * @throws UserAlreadyExistsException si el usuario o el email ya están registrados.
      *         Se controla en el mismo momento de guardar: si dos personas se registran a la vez
      *         con el mismo nombre, solo una lo consigue.
      */
-    public function create(string $username, string $email, ?string $phone, string $passwordHash): User;
+    public function create(
+        string $username,
+        string $email,
+        ?string $phone,
+        string $passwordHash,
+        string $role = User::ROLE_CLIENT,
+    ): User;
+
+    /**
+     * Reemplaza el hash de la contraseña de un usuario (si no existe, no hace nada).
+     * Se usa para que la contraseña del dueño sea siempre la configurada en .env.
+     */
+    public function updatePasswordHash(int $id, string $passwordHash): void;
 }

@@ -16,6 +16,8 @@ return [
     ['GET',    '/api/libros/todos',        [CatalogController::class,  'all']],
     ['GET',    '/api/libros/export.csv',   [CatalogController::class,  'exportCsv']],
     ['GET',    '/api/libros/{slug}',       [CatalogController::class,  'show']],
+    // Cargar un libro: solo el dueño de la librería (401 sin sesión, 403 si es un cliente).
+    ['POST',   '/api/libros',              [CatalogController::class,  'store']],
 
     // Carrito y compra: requieren la sesión iniciada (401 si no hay). Un carrito por usuario.
     ['GET',    '/api/carrito',             [CartController::class,     'index']],

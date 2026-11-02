@@ -3,6 +3,7 @@
 # Secretos y datos locales: en Render se configuran como variables de entorno.
 .env
 storage/data/users.json
+storage/data/libros-cargados.json
 storage/logs/*.log
 
 # Se instalan dentro de la imagen (Dockerfile).

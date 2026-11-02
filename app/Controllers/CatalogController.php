@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Core\{Config, Request, Response};
+use App\Core\{Config, Request, Response, Validator};
 use App\Models\Book;
-use App\Repositories\BookRepositoryInterface;
+use App\Repositories\{BookAlreadyExistsException, BookRepositoryInterface};
 use App\Services\{CsvExporter, Paginator};
 
 /**
@@ -64,6 +64,62 @@ final class CatalogController extends Controller
             'data'  => array_map(fn (Book $book) => $book->toArray(), $this->books()->search()),
             'sorts' => BookRepositoryInterface::SORTS,
         ]);
+    }
+
+    /**
+     * POST /api/libros  {"titulo", "autor", "genero", "precio", "resumen", "sinopsis"}
+     * Carga un libro nuevo. Solo el dueño de la librería.
+     *
+     * 201: {"data": libro}. 401: sin sesión. 403: no es el dueño. 422: datos inválidos o libro repetido.
+     */
+    public function store(Request $request): Response
+    {
+        $this->requireOwner($request);
+
+        // Las reglas son las constantes de Book; el formulario del frontend valida lo mismo.
+        $pattern = static fn (string $regex, string $message) =>
+            static fn (string $value) => preg_match(Book::regex($regex), $value) === 1 ? null : $message;
+
+        $errors = Validator::validate($request->body, [
+            'titulo'   => ['required', 'min:' . Book::TITLE_MIN, 'max:' . Book::TITLE_MAX],
+            'autor'    => ['required', 'min:' . Book::AUTHOR_MIN, 'max:' . Book::AUTHOR_MAX,
+                $pattern(Book::AUTHOR_PATTERN, 'Usá solo letras, espacios, punto, apóstrofo y guion.')],
+            'genero'   => ['required', 'min:' . Book::GENRE_MIN, 'max:' . Book::GENRE_MAX,
+                $pattern(Book::GENRE_PATTERN, 'Usá solo letras, espacios, "/" y guion.')],
+            'precio'   => ['required', 'integer', 'between:' . Book::PRICE_MIN . ',' . Book::PRICE_MAX],
+            'resumen'  => ['required', 'min:' . Book::SUMMARY_MIN, 'max:' . Book::SUMMARY_MAX],
+            'sinopsis' => ['required', 'min:' . Book::SYNOPSIS_MIN, 'max:' . Book::SYNOPSIS_MAX],
+        ]);
+
+        $title = self::text($request, 'titulo');
+        $author = self::text($request, 'autor');
+        if (!isset($errors['titulo']) && !isset($errors['autor'])
+            && $this->books()->findByTitleAndAuthor($title, $author) !== null) {
+            $errors['titulo'] = 'Ya existe un libro con ese título y autor.';
+        }
+
+        if ($errors !== []) {
+            return $this->validationError($errors);
+        }
+
+        try {
+            $book = $this->books()->create(
+                $title,
+                $author,
+                self::text($request, 'genero'),
+                (float) self::text($request, 'precio'),
+                self::text($request, 'resumen'),
+                self::text($request, 'sinopsis'),
+                // La tapa se agrega con la carga por arrastre (consigna 03). Sin tapa, el frontend
+                // muestra la imagen genérica.
+            );
+        } catch (BookAlreadyExistsException $e) {
+            // Otra carga del mismo libro se guardó entre el control de arriba y este momento.
+            return $this->validationError(['titulo' => $e->getMessage()]);
+        }
+
+        // 201 Created: el libro nuevo, con su slug (el frontend lleva a /catalogo/{slug}).
+        return Response::json(['data' => $book->toArray()], 201);
     }
 
     /**

@@ -44,8 +44,13 @@ final class JsonUserRepository implements UserRepositoryInterface
         return $this->findFirst(fn (array $row) => self::normalize($row['email']) === $email);
     }
 
-    public function create(string $username, string $email, ?string $phone, string $passwordHash): User
-    {
+    public function create(
+        string $username,
+        string $email,
+        ?string $phone,
+        string $passwordHash,
+        string $role = User::ROLE_CLIENT,
+    ): User {
         $handle = $this->open('c+');   // c+: lo crea si no existe, sin borrar el contenido
         try {
             // Bloqueo exclusivo: si otra petición está leyendo o escribiendo el archivo, esta espera.
@@ -71,14 +76,10 @@ final class JsonUserRepository implements UserRepositoryInterface
                 phone: $phone,
                 passwordHash: $passwordHash,
                 createdAt: date(DATE_ATOM),
+                role: $role,
             );
             $rows[] = $user->toArray();
-
-            $json = json_encode($rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
-            ftruncate($handle, 0);
-            rewind($handle);
-            fwrite($handle, $json);
-            fflush($handle);
+            $this->write($handle, $rows);
 
             return $user;
         } finally {
@@ -87,6 +88,43 @@ final class JsonUserRepository implements UserRepositoryInterface
             flock($handle, LOCK_UN);
             fclose($handle);
         }
+    }
+
+    public function updatePasswordHash(int $id, string $passwordHash): void
+    {
+        if (!is_file($this->file)) {
+            return;
+        }
+
+        $handle = $this->open('c+');
+        try {
+            // Mismo bloqueo exclusivo que create(): leer -> modificar -> escribir sin interrupciones.
+            flock($handle, LOCK_EX);
+            $rows = $this->read($handle);
+            foreach ($rows as &$row) {
+                if ((int) $row['id'] === $id) {
+                    $row['password_hash'] = $passwordHash;
+                }
+            }
+            unset($row);
+            $this->write($handle, $rows);
+        } finally {
+            flock($handle, LOCK_UN);
+            fclose($handle);
+        }
+    }
+
+    /**
+     * Reemplaza el contenido del archivo (ya abierto y bloqueado) por $rows.
+     * @param resource $handle
+     */
+    private function write($handle, array $rows): void
+    {
+        $json = json_encode($rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        ftruncate($handle, 0);
+        rewind($handle);
+        fwrite($handle, $json);
+        fflush($handle);
     }
 
     private function findFirst(callable $matches): ?User
