@@ -7,6 +7,8 @@ use App\Core\{Config, Request, Response, Validator};
 use App\Models\Book;
 use App\Repositories\{BookAlreadyExistsException, BookRepositoryInterface};
 use App\Services\{CsvExporter, Paginator};
+use App\Services\Covers\{CoverImage, InvalidCoverException};
+use RuntimeException;
 
 /**
  * Catálogo de libros: listado con búsqueda y paginado, detalle y exportación CSV.
@@ -67,10 +69,14 @@ final class CatalogController extends Controller
     }
 
     /**
-     * POST /api/libros  {"titulo", "autor", "genero", "precio", "resumen", "sinopsis"}
+     * POST /api/libros  {"titulo", "autor", "genero", "precio", "resumen", "sinopsis", "tapa"?}
      * Carga un libro nuevo. Solo el dueño de la librería.
      *
+     * "tapa" (opcional) es la imagen como data URL ("data:image/webp;base64,...", ver Services/Covers/CoverImage).
+     * Se guarda solo si todo lo demás es válido; sin tapa, el frontend muestra la imagen genérica.
+     *
      * 201: {"data": libro}. 401: sin sesión. 403: no es el dueño. 422: datos inválidos o libro repetido.
+     * 503: no se pudo guardar la tapa (el libro no se crea: se puede reintentar).
      */
     public function store(Request $request): Response
     {
@@ -98,8 +104,33 @@ final class CatalogController extends Controller
             $errors['titulo'] = 'Ya existe un libro con ese título y autor.';
         }
 
+        // Tapa (opcional): tipo, peso y medidas reales de la imagen.
+        $cover = null;
+        $coverData = $request->input('tapa');
+        if (!is_string($coverData) && $coverData !== null) {
+            $errors['tapa'] = 'El archivo no es una imagen válida.';   // ej. un array o un número
+        } elseif ($coverData !== null && $coverData !== '') {
+            try {
+                $cover = CoverImage::fromDataUrl($coverData);
+            } catch (InvalidCoverException $e) {
+                $errors['tapa'] = $e->getMessage();
+            }
+        }
+
         if ($errors !== []) {
             return $this->validationError($errors);
+        }
+
+        // La tapa se guarda recién ahora, con todo lo demás validado: así no quedan imágenes
+        // de libros que no se cargaron.
+        $coverUrl = null;
+        if ($cover !== null) {
+            try {
+                $coverUrl = $this->covers()->store($cover);
+            } catch (RuntimeException) {
+                // El detalle quedó en el log (ej. Cloudinary no responde).
+                return Response::error('No se pudo guardar la tapa. Intentá nuevamente en unos minutos.', 503);
+            }
         }
 
         try {
@@ -110,8 +141,7 @@ final class CatalogController extends Controller
                 (float) self::text($request, 'precio'),
                 self::text($request, 'resumen'),
                 self::text($request, 'sinopsis'),
-                // La tapa se agrega con la carga por arrastre (consigna 03). Sin tapa, el frontend
-                // muestra la imagen genérica.
+                $coverUrl,   // sin tapa (null), el frontend muestra la imagen genérica
             );
         } catch (BookAlreadyExistsException $e) {
             // Otra carga del mismo libro se guardó entre el control de arriba y este momento.
