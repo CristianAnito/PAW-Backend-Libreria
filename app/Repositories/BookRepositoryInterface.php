@@ -49,4 +49,12 @@ interface BookRepositoryInterface
         string $synopsis,
         ?string $cover = null,
     ): Book;
+
+    /**
+     * Guarda los cambios de un libro que ya existe (se busca por su id; el slug no cambia).
+     *
+     * @throws BookAlreadyExistsException si OTRO libro tiene el mismo título y autor.
+     * @throws BookNotFoundException si el libro ya no existe.
+     */
+    public function update(Book $book): void;
 }

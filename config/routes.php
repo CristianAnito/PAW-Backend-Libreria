@@ -18,6 +18,8 @@ return [
     ['GET',    '/api/libros/{slug}',       [CatalogController::class,  'show']],
     // Cargar un libro: solo el dueño de la librería (401 sin sesión, 403 si es un cliente).
     ['POST',   '/api/libros',              [CatalogController::class,  'store']],
+    // Editar un libro (cualquiera, también los del catálogo base): solo el dueño. El slug no cambia.
+    ['PATCH',  '/api/libros/{slug}',       [CatalogController::class,  'update']],
     // Tapas subidas por el dueño, cuando se guardan en el disco (COVERS_DRIVER=local).
     ['GET',    '/api/tapas/{nombre}.{tipo}', [CoverController::class,  'show']],
 
