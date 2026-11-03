@@ -9,9 +9,11 @@ use RuntimeException;
 /**
  * Libros guardados en dos archivos JSON:
  * - storage/data/books.json: el catálogo base. Está en el repositorio y la API solo lo LEE.
- * - storage/data/libros-cargados.json: los libros que carga el dueño. Lo crea y escribe la API,
+ * - storage/data/libros-cargados.json: los libros que carga o edita el dueño. Lo crea y escribe la API,
  *   y está fuera de git (.gitignore): probar la carga en local no modifica el catálogo del repo.
- * El catálogo es la unión de los dos.
+ * El catálogo es la unión de los dos. Si el dueño edita un libro del catálogo base, la versión editada
+ * se guarda en libros-cargados.json con el mismo id y reemplaza a la original al leer (ver merge()):
+ * books.json nunca se modifica.
  *
  * Como users.json, el archivo de libros cargados se escribe con flock() (ver JsonUserRepository).
  * En Render el disco se borra al reiniciar: los libros cargados se pierden hasta usar una base de datos.
@@ -95,20 +97,13 @@ final class JsonBookRepository implements BookRepositoryInterface
         string $synopsis,
         ?string $cover = null,
     ): Book {
-        if ($this->loadedFile === null) {
-            throw new RuntimeException('No hay un archivo configurado para guardar libros cargados.');
-        }
-
-        $handle = @fopen($this->loadedFile, 'c+');   // c+: lo crea si no existe, sin borrar el contenido
-        if ($handle === false) {
-            throw new RuntimeException("No se pudo abrir el archivo de libros cargados: {$this->loadedFile}");
-        }
+        $handle = $this->openLoadedFile();
         try {
             // Bloqueo exclusivo: "leer -> controlar duplicados -> elegir id y slug -> escribir" ocurre
             // completo, sin que otra carga simultánea se meta en el medio (mismo id o mismo slug).
             flock($handle, LOCK_EX);
             $loaded = self::readRows($handle);
-            $rows = [...$this->readBaseRows(), ...$loaded];
+            $rows = self::merge($this->readBaseRows(), $loaded);
 
             foreach ($rows as $row) {
                 if (self::sameBook((string) $row['title'], (string) $row['author'], $title, $author)) {
@@ -128,12 +123,7 @@ final class JsonBookRepository implements BookRepositoryInterface
                 cover: $cover,
             );
             $loaded[] = $book->toArray();
-
-            $json = json_encode($loaded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
-            ftruncate($handle, 0);
-            rewind($handle);
-            fwrite($handle, $json);
-            fflush($handle);
+            self::writeRows($handle, $loaded);
 
             $this->books = null; // la próxima lectura incluye el libro nuevo
             return $book;
@@ -143,14 +133,91 @@ final class JsonBookRepository implements BookRepositoryInterface
         }
     }
 
-    /** @return Book[] Catálogo base + libros cargados. */
+    public function update(Book $book): void
+    {
+        $handle = $this->openLoadedFile();
+        try {
+            // Mismo bloqueo que create(): dos ediciones a la vez no se pisan.
+            flock($handle, LOCK_EX);
+            $loaded = self::readRows($handle);
+            $rows = self::merge($this->readBaseRows(), $loaded);
+
+            if (!in_array($book->id, array_column($rows, 'id'), true)) {
+                throw new BookNotFoundException();
+            }
+            foreach ($rows as $row) {
+                if ($row['id'] !== $book->id
+                    && self::sameBook((string) $row['title'], (string) $row['author'], $book->title, $book->author)) {
+                    throw new BookAlreadyExistsException();
+                }
+            }
+
+            // Si ya estaba en libros-cargados.json (cargado por el dueño, o un libro base ya editado),
+            // se reemplaza esa fila. Si es un libro base sin editar, se agrega: desde ahora tapa al original.
+            $index = array_search($book->id, array_column($loaded, 'id'), true);
+            if ($index === false) {
+                $loaded[] = $book->toArray();
+            } else {
+                $loaded[$index] = $book->toArray();
+            }
+            self::writeRows($handle, $loaded);
+
+            $this->books = null; // la próxima lectura incluye los cambios
+        } finally {
+            flock($handle, LOCK_UN);
+            fclose($handle);
+        }
+    }
+
+    /** @return Book[] Catálogo base (con las ediciones aplicadas) + libros cargados. */
     private function all(): array
     {
         if ($this->books === null) {
-            $rows = [...$this->readBaseRows(), ...$this->readLoadedRows()];
+            $rows = self::merge($this->readBaseRows(), $this->readLoadedRows());
             $this->books = array_map([Book::class, 'fromArray'], $rows);
         }
         return $this->books;
+    }
+
+    /**
+     * Une los dos archivos: cada libro base que tiene una versión en libros-cargados.json (mismo id)
+     * se reemplaza por esa versión, en el mismo lugar del catálogo; después van los libros cargados.
+     */
+    private static function merge(array $base, array $loaded): array
+    {
+        $edited = array_column($loaded, null, 'id');
+        $rows = array_map(fn (array $row) => $edited[$row['id']] ?? $row, $base);
+
+        $baseIds = array_column($base, 'id');
+        foreach ($loaded as $row) {
+            if (!in_array($row['id'], $baseIds, true)) {
+                $rows[] = $row;
+            }
+        }
+        return $rows;
+    }
+
+    /** @return resource El archivo de libros cargados, abierto para leer y escribir. */
+    private function openLoadedFile()
+    {
+        if ($this->loadedFile === null) {
+            throw new RuntimeException('No hay un archivo configurado para guardar libros cargados.');
+        }
+        $handle = @fopen($this->loadedFile, 'c+');   // c+: lo crea si no existe, sin borrar el contenido
+        if ($handle === false) {
+            throw new RuntimeException("No se pudo abrir el archivo de libros cargados: {$this->loadedFile}");
+        }
+        return $handle;
+    }
+
+    /** @param resource $handle Abierto y bloqueado (LOCK_EX). */
+    private static function writeRows($handle, array $rows): void
+    {
+        $json = json_encode($rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        ftruncate($handle, 0);
+        rewind($handle);
+        fwrite($handle, $json);
+        fflush($handle);
     }
 
     private function readBaseRows(): array

@@ -5,13 +5,13 @@ namespace App\Controllers;
 
 use App\Core\{Config, Request, Response, Validator};
 use App\Models\Book;
-use App\Repositories\{BookAlreadyExistsException, BookRepositoryInterface};
+use App\Repositories\{BookAlreadyExistsException, BookNotFoundException, BookRepositoryInterface};
 use App\Services\{CsvExporter, Paginator};
 use App\Services\Covers\{CoverImage, InvalidCoverException};
 use RuntimeException;
 
 /**
- * Catálogo de libros: listado con búsqueda y paginado, detalle y exportación CSV.
+ * Catálogo de libros: listado con búsqueda y paginado, detalle, exportación CSV, y carga y edición (solo el dueño).
  */
 final class CatalogController extends Controller
 {
@@ -82,7 +82,117 @@ final class CatalogController extends Controller
     {
         $this->requireOwner($request);
 
-        // Las reglas son las constantes de Book; el formulario del frontend valida lo mismo.
+        $errors = $this->validateBook($request);
+        $cover = $this->coverFromRequest($request, $errors);
+        if ($errors !== []) {
+            return $this->validationError($errors);
+        }
+
+        // La tapa se guarda recién ahora, con todo lo demás validado: así no quedan imágenes
+        // de libros que no se cargaron.
+        try {
+            $coverUrl = $cover !== null ? $this->covers()->store($cover) : null;
+        } catch (RuntimeException) {
+            return $this->coverNotSaved();
+        }
+
+        try {
+            $book = $this->books()->create(
+                self::text($request, 'titulo'),
+                self::text($request, 'autor'),
+                self::text($request, 'genero'),
+                (float) self::text($request, 'precio'),
+                self::text($request, 'resumen'),
+                self::text($request, 'sinopsis'),
+                $coverUrl,   // sin tapa (null), el frontend muestra la imagen genérica
+            );
+        } catch (BookAlreadyExistsException $e) {
+            // Otra carga del mismo libro se guardó entre el control de validateBook() y este momento.
+            return $this->validationError(['titulo' => $e->getMessage()]);
+        }
+
+        // 201 Created: el libro nuevo, con su slug (el frontend lleva a /catalogo/{slug}).
+        return Response::json(['data' => $book->toArray()], 201);
+    }
+
+    /**
+     * PATCH /api/libros/{slug}  {"titulo", "autor", "genero", "precio", "resumen", "sinopsis", "tapa"?}
+     * Edita un libro: cualquiera del catálogo, también los del catálogo base. Solo el dueño.
+     *
+     * Se envían todos los campos del formulario (mismas reglas que al cargar). La tapa:
+     * - sin "tapa" en el cuerpo: se mantiene la actual;
+     * - "tapa": data URL -> se reemplaza;
+     * - "tapa": null (o "") -> se quita (el frontend muestra la imagen genérica).
+     * El slug (la dirección del libro) no cambia aunque cambie el título: así no se rompen los
+     * enlaces compartidos ni los carritos que tienen ese libro.
+     *
+     * 200: {"data": libro}. 401: sin sesión. 403: no es el dueño. 404: el libro no existe.
+     * 422: datos inválidos u otro libro con el mismo título y autor. 503: no se pudo guardar la tapa.
+     */
+    public function update(Request $request, string $slug): Response
+    {
+        $this->requireOwner($request);
+
+        $current = $this->books()->findBySlug($slug);
+        if ($current === null) {
+            return $this->notFound('El libro solicitado no existe.');
+        }
+
+        $errors = $this->validateBook($request, $current->id);
+
+        $cover = null;
+        $coverUrl = $current->cover;
+        if (array_key_exists('tapa', $request->body)) {
+            $cover = $this->coverFromRequest($request, $errors);
+            if ($cover === null && !isset($errors['tapa'])) {
+                $coverUrl = null; // "tapa": null -> se quita
+            }
+        }
+
+        if ($errors !== []) {
+            return $this->validationError($errors);
+        }
+
+        try {
+            if ($cover !== null) {
+                $coverUrl = $this->covers()->store($cover);
+            }
+        } catch (RuntimeException) {
+            return $this->coverNotSaved();
+        }
+
+        $book = new Book(
+            id: $current->id,
+            slug: $current->slug,
+            title: self::text($request, 'titulo'),
+            author: self::text($request, 'autor'),
+            genre: self::text($request, 'genero'),
+            price: (float) self::text($request, 'precio'),
+            summary: self::text($request, 'resumen'),
+            synopsis: self::text($request, 'sinopsis'),
+            cover: $coverUrl,
+        );
+
+        try {
+            $this->books()->update($book);
+        } catch (BookAlreadyExistsException $e) {
+            return $this->validationError(['titulo' => $e->getMessage()]);
+        } catch (BookNotFoundException $e) {
+            return $this->notFound($e->getMessage());
+        }
+
+        return Response::json(['data' => $book->toArray()]);
+    }
+
+    /**
+     * Valida los campos del formulario de un libro (al cargarlo o al editarlo).
+     * Las reglas son las constantes de Book; el formulario del frontend valida lo mismo.
+     *
+     * @param int|null $bookId Al editar, el id del libro: puede conservar su propio título y autor.
+     * @return array<string, string> Mensaje de error de cada campo inválido.
+     */
+    private function validateBook(Request $request, ?int $bookId = null): array
+    {
         $pattern = static fn (string $regex, string $message) =>
             static fn (string $value) => preg_match(Book::regex($regex), $value) === 1 ? null : $message;
 
@@ -97,59 +207,43 @@ final class CatalogController extends Controller
             'sinopsis' => ['required', 'min:' . Book::SYNOPSIS_MIN, 'max:' . Book::SYNOPSIS_MAX],
         ]);
 
-        $title = self::text($request, 'titulo');
-        $author = self::text($request, 'autor');
-        if (!isset($errors['titulo']) && !isset($errors['autor'])
-            && $this->books()->findByTitleAndAuthor($title, $author) !== null) {
-            $errors['titulo'] = 'Ya existe un libro con ese título y autor.';
+        if (!isset($errors['titulo']) && !isset($errors['autor'])) {
+            $same = $this->books()->findByTitleAndAuthor(self::text($request, 'titulo'), self::text($request, 'autor'));
+            if ($same !== null && $same->id !== $bookId) {
+                $errors['titulo'] = 'Ya existe un libro con ese título y autor.';
+            }
         }
 
-        // Tapa (opcional): tipo, peso y medidas reales de la imagen.
-        $cover = null;
-        $coverData = $request->input('tapa');
-        if (!is_string($coverData) && $coverData !== null) {
+        return $errors;
+    }
+
+    /**
+     * La tapa del cuerpo ("tapa": data URL), validada (tipo, peso y medidas reales de la imagen).
+     * null si no vino (o vino vacía). Si es inválida, agrega el error en $errors['tapa'].
+     */
+    private function coverFromRequest(Request $request, array &$errors): ?CoverImage
+    {
+        $data = $request->input('tapa');
+        if ($data === null || $data === '') {
+            return null;
+        }
+        if (!is_string($data)) {
             $errors['tapa'] = 'El archivo no es una imagen válida.';   // ej. un array o un número
-        } elseif ($coverData !== null && $coverData !== '') {
-            try {
-                $cover = CoverImage::fromDataUrl($coverData);
-            } catch (InvalidCoverException $e) {
-                $errors['tapa'] = $e->getMessage();
-            }
+            return null;
         }
-
-        if ($errors !== []) {
-            return $this->validationError($errors);
-        }
-
-        // La tapa se guarda recién ahora, con todo lo demás validado: así no quedan imágenes
-        // de libros que no se cargaron.
-        $coverUrl = null;
-        if ($cover !== null) {
-            try {
-                $coverUrl = $this->covers()->store($cover);
-            } catch (RuntimeException) {
-                // El detalle quedó en el log (ej. Cloudinary no responde).
-                return Response::error('No se pudo guardar la tapa. Intentá nuevamente en unos minutos.', 503);
-            }
-        }
-
         try {
-            $book = $this->books()->create(
-                $title,
-                $author,
-                self::text($request, 'genero'),
-                (float) self::text($request, 'precio'),
-                self::text($request, 'resumen'),
-                self::text($request, 'sinopsis'),
-                $coverUrl,   // sin tapa (null), el frontend muestra la imagen genérica
-            );
-        } catch (BookAlreadyExistsException $e) {
-            // Otra carga del mismo libro se guardó entre el control de arriba y este momento.
-            return $this->validationError(['titulo' => $e->getMessage()]);
+            return CoverImage::fromDataUrl($data);
+        } catch (InvalidCoverException $e) {
+            $errors['tapa'] = $e->getMessage();
+            return null;
         }
+    }
 
-        // 201 Created: el libro nuevo, con su slug (el frontend lleva a /catalogo/{slug}).
-        return Response::json(['data' => $book->toArray()], 201);
+    // 503: no se pudo guardar la tapa (el detalle quedó en el log, ej. Cloudinary no responde).
+    // El libro no se crea ni se modifica: se puede reintentar.
+    private function coverNotSaved(): Response
+    {
+        return Response::error('No se pudo guardar la tapa. Intentá nuevamente en unos minutos.', 503);
     }
 
     /**
