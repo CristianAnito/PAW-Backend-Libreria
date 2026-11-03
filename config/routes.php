@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use App\Controllers\{AuthController, CatalogController, CartController, CheckoutController};
+use App\Controllers\{AuthController, CatalogController, CartController, CheckoutController, CoverController};
 
 /**
  * Rutas de la API. Todas responden JSON (salvo la exportación CSV).
@@ -18,6 +18,8 @@ return [
     ['GET',    '/api/libros/{slug}',       [CatalogController::class,  'show']],
     // Cargar un libro: solo el dueño de la librería (401 sin sesión, 403 si es un cliente).
     ['POST',   '/api/libros',              [CatalogController::class,  'store']],
+    // Tapas subidas por el dueño, cuando se guardan en el disco (COVERS_DRIVER=local).
+    ['GET',    '/api/tapas/{nombre}.{tipo}', [CoverController::class,  'show']],
 
     // Carrito y compra: solo clientes con la sesión iniciada (401 sin sesión, 403 si es el dueño).
     // Un carrito por usuario.

@@ -7,6 +7,7 @@ use App\Core\{AuthCookie, Config, HttpException, Logger, Request, Response};
 use App\Models\User;
 use App\Repositories\{BookRepositoryInterface, JsonBookRepository, JsonUserRepository, UserRepositoryInterface};
 use App\Services\{Cart, JwtService, OwnerAccount};
+use App\Services\Covers\{CoverStorage, CoverStorageFactory};
 
 /**
  * Clase base de los controladores de la API.
@@ -45,6 +46,16 @@ abstract class Controller
         return $this->books ??= new JsonBookRepository(
             Config::get('catalog.books_file'),
             Config::get('catalog.loaded_books_file'),
+        );
+    }
+
+    // Dónde se guardan las tapas que sube el dueño: disco local o Cloudinary, según COVERS_DRIVER.
+    protected function covers(): CoverStorage
+    {
+        return CoverStorageFactory::create(
+            Config::get('covers'),
+            Config::get('app.url'),
+            Logger::create(Config::get('app.log.file'), Config::get('app.log.level')),
         );
     }
 

@@ -4,6 +4,7 @@
 .env
 storage/data/users.json
 storage/data/libros-cargados.json
+storage/covers/
 storage/logs/*.log
 
 # Se instalan dentro de la imagen (Dockerfile).

@@ -6,3 +6,6 @@ storage/logs/*.log
 # Usuarios registrados (datos personales y hashes de contraseñas): nunca al repositorio.
 storage/data/users.json
 storage/data/libros-cargados.json
+
+# Tapas subidas por el dueño en desarrollo (COVERS_DRIVER=local).
+storage/covers/

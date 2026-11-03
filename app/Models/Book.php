@@ -40,7 +40,7 @@ final class Book
         public readonly float $price,
         public readonly string $summary,   // descripción corta (listado)
         public readonly string $synopsis,  // descripción larga (detalle)
-        public readonly ?string $cover,    // nombre del archivo de la tapa (lo sirve el frontend), o null
+        public readonly ?string $cover,    // tapa: nombre de archivo (catálogo base), URL (cargada por el dueño) o null
     ) {
         
     }
@@ -62,8 +62,10 @@ final class Book
 
     /**
      * Representación JSON del libro.
-     * La tapa se envía como nombre de archivo: las imágenes son parte del frontend,
-     * que arma la URL (media/libros/{cover}) o usa la imagen genérica si es null.
+     * La tapa ("cover") puede ser:
+     * - un nombre de archivo (libros del catálogo base): la imagen es parte del frontend (media/libros/{cover});
+     * - una URL absoluta (libros cargados por el dueño): Cloudinary, o GET /api/tapas/{archivo} en desarrollo;
+     * - null: el frontend usa la imagen genérica.
      */
     public function toArray(): array
     {
