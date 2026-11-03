@@ -132,6 +132,23 @@ abstract class Controller
         return $user;
     }
 
+    /**
+     * Usuario cliente; si no hay sesión corta con 401, y si es el dueño de la librería, con 403.
+     * Para las acciones de compra (carrito y finalizar compra): el dueño administra el catálogo, no compra.
+     *
+     *   $client = $this->requireClient($request);
+     *
+     * @throws HttpException 401 (sin sesión) o 403 (es el dueño).
+     */
+    protected function requireClient(Request $request): User
+    {
+        $user = $this->requireAuth($request);
+        if ($user->isOwner()) {
+            throw new HttpException(403, 'El dueño de la librería no puede comprar libros.');
+        }
+        return $user;
+    }
+
     // Carrito del usuario (guardado en la sesión de PHP, uno por usuario).
     protected function cart(User $user): Cart
     {
