@@ -11,7 +11,7 @@ use RuntimeException;
  * Finalizar compra: validación en el servidor de los datos del cliente
  * y envío del pedido por mail al personal de la librería (dirección configurable: MAIL_TO).
  * El formulario lo muestra el frontend; acá solo llega el envío (POST con JSON).
- * Solo para usuarios con la sesión iniciada (el carrito es de cada usuario).
+ * Solo para clientes con la sesión iniciada (el carrito es de cada usuario; el dueño no compra: 403).
  */
 final class CheckoutController extends Controller
 {
@@ -20,12 +20,12 @@ final class CheckoutController extends Controller
     /**
      * POST /api/compra  {"nombre": ..., "apellido": ..., "documento": ..., "email": ..., "telefono": ...}
      *
-     * 201: compra registrada. 401: sin sesión. 409: carrito vacío. 422: datos inválidos.
+     * 201: compra registrada. 401: sin sesión. 403: es el dueño. 409: carrito vacío. 422: datos inválidos.
      * 503: no se pudo enviar el mail (el carrito no se vacía, así se puede reintentar).
      */
     public function submit(Request $request): Response
     {
-        $user = $this->requireAuth($request);
+        $user = $this->requireClient($request);
         $cart = $this->cart($user);
         if ($cart->isEmpty()) {
             return Response::error('El carrito está vacío.', 409);

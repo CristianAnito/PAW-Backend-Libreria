@@ -16,7 +16,7 @@ Resumen de lo que hace el sitio con las cuentas de usuario. Detalles específico
 | **Menú según la sesión** | Sin sesión: *Iniciar sesión / Registrarse*. Con sesión: *Hola, usuario / Cerrar sesión*. |
 | **Redirecciones** | Con la sesión iniciada, las páginas de login y registro llevan al inicio. `?volver=/ruta` vuelve a esa ruta después de entrar (ej. `#/iniciar-sesion?volver=/compra`). Solo acepta rutas del sitio. |
 | **Errores claros** | El navegador marca los campos inválidos antes de enviar. Los errores que detecta el servidor (ej. "Ese nombre de usuario ya está en uso") aparecen debajo de cada campo. |
-| **Carrito y compra con sesión** | Para agregar al carrito hay que tener la sesión iniciada. Sin sesión, "Añadir al carrito" lleva al login (o registro) y, al entrar, el libro se agrega solo. Cada usuario tiene su propio carrito. |
+| **Carrito y compra con sesión** | Para agregar al carrito hay que tener la sesión iniciada. Sin sesión, "Añadir al carrito" lleva al login (o registro) y, al entrar, el libro se agrega solo. Cada usuario tiene su propio carrito. El dueño de la librería no compra: la API le responde 403 en el carrito y la compra. |
 
 ## Reglas de validación
 
@@ -48,8 +48,8 @@ Iguales en el frontend (`js/validaciones.js`, atributos HTML) y en el backend (`
 
 | Rol | Quién | Cómo se crea |
 |---|---|---|
-| `cliente` | Todo el que se registra desde el sitio | Registro (`POST /api/auth/registro`). El rol nunca se toma de la petición. |
-| `duenio` | El dueño de la librería: el único que puede cargar libros | **No se registra.** La API crea la cuenta con `OWNER_USERNAME`, `OWNER_EMAIL` y `OWNER_PASSWORD_HASH` (`.env` o variables de Render). |
+| `cliente` | Todo el que se registra desde el sitio: el único que puede comprar | Registro (`POST /api/auth/registro`). El rol nunca se toma de la petición. |
+| `duenio` | El dueño de la librería: el único que puede cargar libros. No compra: el carrito y la compra le responden 403 (`requireClient()`) | **No se registra.** La API crea la cuenta con `OWNER_USERNAME`, `OWNER_EMAIL` y `OWNER_PASSWORD_HASH` (`.env` o variables de Render). |
 
 Cómo funciona la cuenta del dueño (`app/Services/OwnerAccount.php`):
 
@@ -78,7 +78,7 @@ Usuario devuelto: `{id, username, email, phone, role}`. `role` es `cliente` para
 | Archivo | Función |
 |---|---|
 | `app/Controllers/AuthController.php` | Registro, login, logout y usuario actual. |
-| `app/Controllers/Controller.php` | `currentUser()` (usuario o null), `requireAuth()` (401 si no hay sesión) y `requireOwner()` (401 sin sesión, 403 si no es el dueño), para cualquier controlador. |
+| `app/Controllers/Controller.php` | `currentUser()` (usuario o null), `requireAuth()` (401 si no hay sesión), `requireOwner()` (401 sin sesión, 403 si no es el dueño) y `requireClient()` (401 sin sesión, 403 si es el dueño: carrito y compra), para cualquier controlador. |
 | `app/Models/User.php` | Entidad usuario y reglas de validación. |
 | `app/Repositories/UserRepositoryInterface.php` | Qué operaciones existen sobre los usuarios. |
 | `app/Repositories/JsonUserRepository.php` | Implementación con `storage/data/users.json` y `flock`. |

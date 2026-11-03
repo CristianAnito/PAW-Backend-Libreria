@@ -19,7 +19,8 @@ return [
     // Cargar un libro: solo el dueño de la librería (401 sin sesión, 403 si es un cliente).
     ['POST',   '/api/libros',              [CatalogController::class,  'store']],
 
-    // Carrito y compra: requieren la sesión iniciada (401 si no hay). Un carrito por usuario.
+    // Carrito y compra: solo clientes con la sesión iniciada (401 sin sesión, 403 si es el dueño).
+    // Un carrito por usuario.
     ['GET',    '/api/carrito',             [CartController::class,     'index']],
     ['POST',   '/api/carrito/items',       [CartController::class,     'add']],
     ['PATCH',  '/api/carrito/items/{slug}', [CartController::class,    'update']],

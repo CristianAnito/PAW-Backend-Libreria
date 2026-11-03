@@ -7,9 +7,9 @@ use App\Core\{Request, Response};
 use App\Services\Cart;
 
 /**
- * Carrito de compras. Solo para usuarios con la sesión iniciada: cada acción empieza
- * con requireAuth(), que responde 401 si no hay sesión (el frontend lleva al login).
- * Cada usuario tiene su propio carrito.
+ * Carrito de compras. Solo para clientes con la sesión iniciada: cada acción empieza
+ * con requireClient(), que responde 401 si no hay sesión (el frontend lleva al login)
+ * y 403 si es el dueño de la librería (no compra). Cada cliente tiene su propio carrito.
  *
  * Todas las acciones responden con el carrito actualizado, así el frontend
  * lo vuelve a mostrar sin hacer otra petición.
@@ -21,7 +21,7 @@ final class CartController extends Controller
      */
     public function index(Request $request): Response
     {
-        $cart = $this->cart($this->requireAuth($request));
+        $cart = $this->cart($this->requireClient($request));
         return Response::json(['data' => $cart->toArray()]);
     }
 
@@ -31,7 +31,7 @@ final class CartController extends Controller
      */
     public function add(Request $request): Response
     {
-        $cart = $this->cart($this->requireAuth($request));
+        $cart = $this->cart($this->requireClient($request));
 
         $slug = $request->input('libro');
         if (!$this->exists($slug)) {
@@ -53,7 +53,7 @@ final class CartController extends Controller
      */
     public function update(Request $request, string $slug): Response
     {
-        $cart = $this->cart($this->requireAuth($request));
+        $cart = $this->cart($this->requireClient($request));
 
         if (!$cart->has($slug)) {
             return $this->notFound('El libro no está en el carrito.');
@@ -73,7 +73,7 @@ final class CartController extends Controller
      */
     public function remove(Request $request, string $slug): Response
     {
-        $cart = $this->cart($this->requireAuth($request));
+        $cart = $this->cart($this->requireClient($request));
 
         if (!$cart->has($slug)) {
             return $this->notFound('El libro no está en el carrito.');
